@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class HitResponse(BaseModel):
@@ -14,3 +14,8 @@ class LexiconResult(BaseModel):
 class SearchResult(BaseModel):
     hits: dict[str, LexiconResult]
     total: int
+
+
+class CountResult(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    table: list[dict[str, any]]

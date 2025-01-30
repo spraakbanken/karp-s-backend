@@ -20,10 +20,10 @@ def get_config():
     env.read_env()
 
     return Config(
-        host=f"{env.str('DB_HOST')}",
-        user=f"{env.str('DB_USER')}",
-        password=f"{env.str('DB_PASSWORD')}",
-        database=f"{env.str('DB_DATABASE')}",
+        host=env.str("DB_HOST"),
+        user=env.str("DB_USER"),
+        password=env.str("DB_PASSWORD"),
+        database=env.str("DB_DATABASE"),
     )
 
 
@@ -41,7 +41,7 @@ class ResourceConfig(BaseModel):
 
     def format_hit(self, hit):
         def fmt():
-            for field, val in zip(self.fields, hit):
+            for field, val in zip(self.fields, hit[:-1]):
                 if field.collection:
                     val = json.loads(val)
                 yield field.name, val
