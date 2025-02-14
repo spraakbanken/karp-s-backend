@@ -1,8 +1,9 @@
+from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 
 class HitResponse(BaseModel):
-    # any can be anything
+    # entry can be anything
     entry: dict
 
 
@@ -18,4 +19,4 @@ class SearchResult(BaseModel):
 
 class CountResult(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    table: list[dict[str, any]]
+    table: list[dict[str, Any]]

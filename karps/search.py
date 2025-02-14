@@ -1,19 +1,15 @@
 import json
+from typing import Iterable
 from karps.config import Config, get_resource_config
-from karps.database import run_queries, get_sql
-from karps.models import LexiconResult, SearchResult
-
-
-def parse_query(q):
-    if not q:
-        return {}
-    return dict(zip(["op", "field", "value"], q.split("|")))
+from karps.database import add_aggregation, run_searches, get_search
+from karps.models import CountResult, LexiconResult, SearchResult
+from karps.query import parse_query
 
 
 def search(config: Config, resources: list[str], q: str | None = None) -> SearchResult:
-    sql_queries = get_sql(resources, **parse_query(q))
+    s = get_search(resources, parse_query(q))
 
-    results = zip(resources, run_queries(config, sql_queries))
+    results = zip(resources, run_searches(config, s))
 
     total = 0
     lexicon_results = {}
@@ -27,34 +23,15 @@ def search(config: Config, resources: list[str], q: str | None = None) -> Search
     return SearchResult(hits=lexicon_results, total=total)
 
 
-def count(config: Config, resources: list[str], q: str | None = None, compile=(), columns=()) -> None:
-    # TODO if compile field is collection, the json_field must be expanded to as many rows as there are in the fields, use JSON_TABLE
-    # each result column and the field to be presented in it must be included in the inner rows
+def count(
+    config: Config, resources: list[str], q: str | None = None, compile: Iterable[str] = (), columns: Iterable[str] = ()
+) -> CountResult:
     flattened_columns = [item for sublist in columns for item in sublist]
-    # don't send in resource_id here since it is not actually a column
-    sql_queries = get_sql(
-        resources,
-        **parse_query(q),
-        selection=", ".join(compile + [col for col in flattened_columns if col != "resource_id"]),
-    )
-    data_sql = "FROM (" + " UNION ALL ".join(sql_queries) + ") as innerq"
-    groupby_sql = f"GROUP BY {', '.join(compile)}"
-    compile_sql = ", " + ", ".join(compile) if compile else ""
-    # TODO hard-coded fields
-    columns_sql = (
-        ", "
-        + f"JSON_ARRAYAGG(JSON_OBJECT({', '.join([f"'{column}', {column}" for column in flattened_columns])})) as entry_data"
-        if flattened_columns
-        else ""
-    )
-    select_sql = "SELECT count(*) as total" + compile_sql + columns_sql
-
-    # TODO add sort by all the compile parameters
-    sort_sql = f"ORDER BY {compile[0]}"
-    sql_query = " ".join((select_sql, data_sql, groupby_sql, sort_sql))
+    s = get_search(resources, parse_query(q), selection=compile + flattened_columns)
+    agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
 
     result = []
-    headers, res = next(run_queries(config, [sql_query]))
+    headers, res = next(run_searches(config, [agg_s]))
     for row in res:
         total = row[0]
         if flattened_columns:

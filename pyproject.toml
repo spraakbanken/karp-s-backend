@@ -11,3 +11,8 @@ dependencies = [
     "mysql-connector-python",
     "environs",
 ]
+
+[dependency-groups]
+dev = [
+    "requests>=2.32.3",
+]

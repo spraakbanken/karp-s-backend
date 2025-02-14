@@ -43,7 +43,8 @@ class ResourceConfig(BaseModel):
         def fmt():
             for field, val in zip(self.fields, hit[:-1]):
                 if field.collection:
-                    val = json.loads(val)
+                    if val is not None:
+                        val = json.loads(val)
                 yield field.name, val
 
         return dict(fmt())
