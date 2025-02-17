@@ -21,21 +21,23 @@ help:
 
 dev: install-dev
 install-dev:
+	pip install --upgrade pip
+	pip install uv
 	uv sync
 
 .PHONY: serve-w-reload
 serve-w-reload: install-dev
-	${INVENV} fastapi dev --port 9000 karps/main.py
+	fastapi dev --port 9000 karps/api.py
 
 .PHONY: lint
 lint:
-	${INVENV} ruff check .
+	ruff check .
 
 .PHONY: lint-fix
 lint-fix:
-	${INVENV} ruff check . --fix
+	ruff check . --fix
 
 .PHONY: fmt
 fmt:
-	${INVENV} ruff format .
+	ruff format .
 
