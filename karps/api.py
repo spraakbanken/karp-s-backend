@@ -63,7 +63,7 @@ def get_columns_param(name: str):
     ) -> list[tuple[str, str]]:
         if not columns:
             return columns
-        return [column_setting.split("=") for column_setting in columns]
+        return [column_setting.split("=") for column_setting in columns.split(",")]
 
     return inner
 
