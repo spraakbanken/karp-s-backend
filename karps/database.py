@@ -58,7 +58,8 @@ def add_aggregation(s: list[str], compile: list[str], columns: list[str]) -> str
     groupby_sql = f"GROUP BY {', '.join(compile)}"
     compile_sql = ", " + ", ".join(compile) if compile else ""
     columns_sql = (
-        ", " + f"JSON_ARRAYAGG(JSON_OBJECT({', '.join([f"'{column}', {column}" for column in columns])})) as entry_data"
+        ", "
+        + f" CONCAT('[', GROUP_CONCAT(JSON_OBJECT({', '.join([f"'{column}', {column}" for column in columns])})), ']') as entry_data"
         if columns
         else ""
     )
