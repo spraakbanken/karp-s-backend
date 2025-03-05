@@ -26,7 +26,7 @@ def search(config: Config, resources: list[str], q: str | None = None) -> Search
 def count(
     config: Config, resources: list[str], q: str | None = None, compile: Iterable[str] = (), columns: Iterable[str] = ()
 ) -> CountResult:
-    flattened_columns = [item for sublist in columns for item in sublist]
+    flattened_columns = [item for sublist in columns or () for item in sublist]
     s = get_search(resources, parse_query(q), selection=compile + flattened_columns)
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
 
