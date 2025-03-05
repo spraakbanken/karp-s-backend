@@ -3,8 +3,10 @@ import json
 from typing import Iterator, Optional
 from environs import Env
 import glob
-from pydantic import BaseModel
+
 import yaml
+
+from karps.models import BaseModel
 
 
 @dataclass
