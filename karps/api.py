@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
 
 from karps.config import Config, ResourceConfig, get_config, get_resource_configs
 from karps.search import search, count
@@ -21,6 +22,14 @@ app = FastAPI(
     docs_url=None,
     redoc_url="/",
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 config: Config = get_config()
 
