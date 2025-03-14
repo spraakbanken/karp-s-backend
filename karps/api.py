@@ -126,5 +126,5 @@ def do_count(
 
     Each column given in columns will be added to the result.
     """
-    table = count(config, resources, q=q, compile=compile, columns=columns)
-    return CountResult(table=table)
+    headers, table = count(config, resources, q=q, compile=compile, columns=columns)
+    return CountResult(headers=headers, table=table)

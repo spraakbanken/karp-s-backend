@@ -1,6 +1,4 @@
-from typing import Any
 import pydantic
-from pydantic import ConfigDict
 
 
 def to_lower_camel(s: str) -> str:
@@ -30,6 +28,9 @@ class SearchResult(BaseModel):
     total: int
 
 
+type Scalar = str | int | bool
+
+
 class CountResult(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    table: list[dict[str, Any]]
+    headers: list[str]
+    table: list[list[Scalar | list[Scalar] | None]]
