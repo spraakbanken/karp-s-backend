@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+import re
 from typing import Iterable, Iterator
 import mysql.connector
 from mysql.connector.connection import MySQLConnection
@@ -46,6 +48,14 @@ def get_search(resources: list[str], q: Query | None, selection: Iterable[str] =
     return [f"SELECT {get_selection_str(resource_id)} FROM {resource_id} {where_clause}" for resource_id in resources]
 
 
+def add_size(s: list[str], size, _from):
+    selection_match_regexp = re.compile("SELECT (.*) FROM")
+    for search in s:
+        selection_str = re.match(selection_match_regexp, search)[1]
+        # return the original query with LIMIT + OFFSET and an additional query for counting totals
+        yield search + f" LIMIT {size} OFFSET {_from}", search.replace(selection_str, "COUNT(*)")
+
+
 def add_aggregation(s: list[str], compile: list[str], columns: list[str]) -> str:
     """
     Takes a string containing an list of SQL queries and does aggregations on
@@ -71,15 +81,32 @@ def add_aggregation(s: list[str], compile: list[str], columns: list[str]) -> str
     return s
 
 
-def run_searches(config: Config, sql_queries: list[str]) -> Iterator[list[tuple]]:
+@contextmanager
+def get_cursor(config: Config) -> object:
     connection = get_connection(config)
     try:
         cursor = connection.cursor()
+        yield cursor
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def run_paged_searches(config: Config, sql_queries: Iterable[Iterable[str]]) -> Iterator[list[tuple]]:
+    with get_cursor(config) as cursor:
+        for paged_query, count_query in sql_queries:
+            cursor.execute(paged_query)
+            columns = [desc[0] for desc in cursor.description]
+            results = cursor.fetchall()
+            cursor.execute(count_query)
+            total = cursor.fetchall()[0][0]
+            yield columns, results, total
+
+
+def run_searches(config: Config, sql_queries: Iterable[str]) -> Iterator[list[tuple]]:
+    with get_cursor(config) as cursor:
         for sql_query in sql_queries:
             cursor.execute(sql_query)
             columns = [desc[0] for desc in cursor.description]
             results = cursor.fetchall()
             yield columns, results
-    finally:
-        cursor.close()
-        connection.close()

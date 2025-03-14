@@ -101,11 +101,13 @@ def get_config() -> list[ResourceConfig]:
 def do_search(
     resources: list[str] = Depends(get_resources_param()),
     q: str | None = get_q_param(),
+    size: int = 10,
+    _from: int = Query(0, alias="from"),
 ) -> SearchResult:
     """
     From each provided resource, return the entries that match the query q.
     """
-    return search(config, resources, q=q)
+    return search(config, resources, q=q, size=size, _from=_from)
 
 
 @app.get("/count", summary="Count")
