@@ -4,6 +4,7 @@ from typing import Iterator, Optional
 from environs import Env
 import glob
 
+from pydantic import ConfigDict, RootModel
 import yaml
 
 from karps.models import BaseModel
@@ -35,11 +36,22 @@ class Field(BaseModel):
     collection: Optional[bool] = False
 
 
+class MultiLang(RootModel[str | dict[str, str]]): ...
+
+
 class ResourceConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     resource_id: str
     fields: list[Field]
-    # will be str | MultiLangLabel
-    label: str
+    label: MultiLang
+    description: MultiLang | None = None
+    word: str
+    word_description: MultiLang
+    updated: int
+    size: int
+    link: str
+    tags: list[str] | None = None
 
     def format_hit(self, hit):
         def fmt():
@@ -52,14 +64,33 @@ class ResourceConfig(BaseModel):
         return dict(fmt())
 
 
+class Tag(BaseModel):
+    name: MultiLang
+    description: MultiLang
+
+
+class ConfigResponse(BaseModel):
+    resources: list[ResourceConfig]
+    tags: dict[str, Tag]
+
+
+class MainConfig(BaseModel):
+    tags: dict[str, Tag]
+
+
 def get_resource_configs(resource_id: str | None = None) -> Iterator[ResourceConfig]:
     if resource_id:
         glob_pattern = f"{resource_id}.yaml"
     else:
         glob_pattern = "*"
-    for resource in glob.glob(f"resources/{glob_pattern}"):
+    for resource in glob.glob(f"config/resources/{glob_pattern}"):
         with open(resource) as fp:
             yield ResourceConfig(**yaml.safe_load(fp))
+
+
+def get_tags() -> dict[str, Tag]:
+    with open("config/config.yaml") as fp:
+        return MainConfig(**yaml.safe_load(fp)).tags
 
 
 def get_resource_config(resource_id) -> ResourceConfig:

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from karps.config import Config, ResourceConfig, get_config, get_resource_configs
+from karps.config import Config, ConfigResponse, get_config, get_resource_configs, get_tags
 from karps.search import search, count
 from karps.models import CountResult, SearchResult
 
@@ -89,12 +89,12 @@ def get_resources_param():
     return get_list_param(alias="resources", title="Resources", description=resources_param_description)
 
 
-@app.get("/config", summary="Get config")
-def get_config() -> list[ResourceConfig]:
+@app.get("/config", summary="Get config", response_model_exclude_unset=True)
+def get_config() -> ConfigResponse:
     """
     Returns a description of contents of each installed resource/lexicon. For example the available fields and their types.
     """
-    return list(get_resource_configs())
+    return ConfigResponse(tags=get_tags(), resources=get_resource_configs())
 
 
 @app.get("/search", summary="Search")
