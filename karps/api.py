@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from karps.config import Config, ConfigResponse, get_config, get_resource_configs, get_tags
+from karps.config import Config, ConfigResponse, get_config, get_resource_configs, load_config
 from karps.search import search, count
 from karps.models import CountResult, SearchResult
 
@@ -94,7 +94,9 @@ def get_config() -> ConfigResponse:
     """
     Returns a description of contents of each installed resource/lexicon. For example the available fields and their types.
     """
-    return ConfigResponse(tags=get_tags(), resources=get_resource_configs())
+    config = load_config()
+    # return ConfigResponse(tags=config.tags, fields=config.fields, resources=get_resource_configs())
+    return ConfigResponse(tags=config.tags, fields=config.fields, resources=get_resource_configs())
 
 
 @app.get("/search", summary="Search")
@@ -107,7 +109,8 @@ def do_search(
     """
     From each provided resource, return the entries that match the query q.
     """
-    return search(config, resources, q=q, size=size, _from=_from)
+    main_config = get_config()
+    return search(config, main_config, resources, q=q, size=size, _from=_from)
 
 
 @app.get("/count", summary="Count")

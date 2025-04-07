@@ -29,6 +29,10 @@ install-dev:
 serve-w-reload: install-dev
 	fastapi dev --port 9000 karps/api.py
 
+.PHONY: test
+test:
+	PYTHONPATH=. pytest
+
 .PHONY: lint
 lint:
 	ruff check .
