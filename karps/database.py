@@ -22,9 +22,9 @@ def query_to_sql_clause(q: Query | None) -> str:
         return ""
     if q.op and q.field and q.value:
         if q.op == "equals":
-            where_clause = f"WHERE {q.field} = '{q.value}'"
+            where_clause = f"WHERE `{q.field}` = '{q.value}'"
         elif q.op == "startswith":
-            where_clause = f"WHERE {q.field} LIKE '{q.value}%'"
+            where_clause = f"WHERE `{q.field}` LIKE '{q.value}%'"
         else:
             raise NotImplementedError("Only equals and startswith are supported in queries right now")
     else:
@@ -45,7 +45,7 @@ def get_search(resources: list[str], q: Query | None, selection: Iterable[str] =
         return selection_str
 
     where_clause = query_to_sql_clause(q)
-    return [f"SELECT {get_selection_str(resource_id)} FROM {resource_id} {where_clause}" for resource_id in resources]
+    return [f"SELECT {get_selection_str(resource_id)} FROM `{resource_id}` {where_clause}" for resource_id in resources]
 
 
 def add_size(s: list[str], size, _from):
