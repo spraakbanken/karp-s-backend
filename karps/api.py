@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from karps.config import Config, ConfigResponse, get_config, get_resource_configs, load_config
-from karps.search import search, count
+from karps.search import count, search
 from karps.models import CountResult, SearchResult
 
 api_description = """
