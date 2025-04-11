@@ -5,7 +5,7 @@ import mysql.connector
 from mysql.connector.connection import MySQLConnection
 
 from karps.config import Config
-from karps.query import Query
+from karps.query.query import Query, as_sql
 
 
 def get_connection(config: Config) -> MySQLConnection:
@@ -15,21 +15,6 @@ def get_connection(config: Config) -> MySQLConnection:
         password=config.password,
         database=config.database,
     )
-
-
-def query_to_sql_clause(q: Query | None) -> str:
-    if not q:
-        return ""
-    if q.op and q.field and q.value:
-        if q.op == "equals":
-            where_clause = f"WHERE `{q.field}` = '{q.value}'"
-        elif q.op == "startswith":
-            where_clause = f"WHERE `{q.field}` LIKE '{q.value}%'"
-        else:
-            raise NotImplementedError("Only equals and startswith are supported in queries right now")
-    else:
-        where_clause = ""
-    return where_clause
 
 
 def get_search(resources: list[str], q: Query | None, selection: Iterable[str] = ("*")) -> list[str]:
@@ -44,7 +29,7 @@ def get_search(resources: list[str], q: Query | None, selection: Iterable[str] =
             return f"{selection_str}, '{resource_id}' as resource_id"
         return selection_str
 
-    where_clause = query_to_sql_clause(q)
+    where_clause = as_sql(q)
     return [f"SELECT {get_selection_str(resource_id)} FROM `{resource_id}` {where_clause}" for resource_id in resources]
 
 

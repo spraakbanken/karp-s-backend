@@ -1,31 +1,10 @@
-from contextlib import contextmanager
 import glob
-import multiprocessing
-from time import sleep
-import requests
-import uvicorn
 import yaml
 
-from karps.api import app
+from tests.integration.conftest import Backend
 
 
-def run_app():
-    uvicorn.run(app, host="127.0.0.1", port=12345)
-
-
-@contextmanager
-def start_backend():
-    process = multiprocessing.Process(target=run_app)
-    try:
-        process.start()
-        sleep(0.1)
-        yield
-    finally:
-        process.terminate()
-        process.join()
-
-
-def test_casing():
+def test_casing(backend: Backend):
     """test that all field names, resource ids and tag names are untouched, but that all other keys are camel-case, including resourceId"""
     with open("config/config.yaml") as fp:
         main = yaml.safe_load(fp)
@@ -38,7 +17,7 @@ def test_casing():
             resource_ids.append(resource_config["resource_id"])
 
     def test_config():
-        response = requests.get("http://localhost:12345/config")
+        response = backend.get("/config")
         config = response.json()
         for key in config.keys():
             assert "_" not in key
@@ -69,14 +48,13 @@ def test_casing():
                 general_check(value)
 
     def test_search():
-        response = requests.get("http://localhost:12345/search")
+        response = backend.get("/search")
         general_check(response.json())
 
     def test_count():
-        response = requests.get("http://localhost:12345/count")
+        response = backend.get("/count")
         general_check(response.json())
 
-    with start_backend():
-        test_config()
-        test_search()
-        test_count()
+    test_config()
+    test_search()
+    test_count()
