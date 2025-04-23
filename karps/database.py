@@ -78,6 +78,7 @@ def get_cursor(config: Config) -> object:
 
 
 def run_paged_searches(config: Config, sql_queries: Iterable[Iterable[str]]) -> Iterator[list[tuple]]:
+    res = []
     with get_cursor(config) as cursor:
         for paged_query, count_query in sql_queries:
             cursor.execute(paged_query)
@@ -85,7 +86,8 @@ def run_paged_searches(config: Config, sql_queries: Iterable[Iterable[str]]) -> 
             results = cursor.fetchall()
             cursor.execute(count_query)
             total = cursor.fetchall()[0][0]
-            yield columns, results, total
+            res.append((columns, results, total))
+    return res
 
 
 def run_searches(config: Config, sql_queries: Iterable[str]) -> Iterator[list[tuple]]:
