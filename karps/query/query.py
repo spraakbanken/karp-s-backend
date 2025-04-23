@@ -37,7 +37,7 @@ def as_sql(q: Query | None) -> str:
         op_arg = f"= '{q.value}'"
     elif q.op == "startswith":
         op_arg = f"LIKE '{q.value}%'"
-    elif q.op == "endsswith":
+    elif q.op == "endswith":
         op_arg = f"LIKE '%{q.value}'"
     elif q.op == "contains":
         op_arg = f"LIKE '%{q.value}%'"
