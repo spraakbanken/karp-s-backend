@@ -17,10 +17,9 @@ def search(
 
     total = 0
     lexicon_results = {}
-    for resource, (_, hits, total) in results:
+    for resource, (_, hits, lexicon_total) in results:
         rc = get_resource_config(resource)
         hits = [{"entry": format_hit(main_config, rc, hit)} for hit in hits]
-        lexicon_total = total
         lexicon_results[resource] = LexiconResult(hits=hits, total=lexicon_total)
         total += lexicon_total
 
