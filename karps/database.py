@@ -25,12 +25,12 @@ def get_search(resources: list[ResourceConfig], q: Query | None, selection: Iter
     selection_str = ", ".join([col for col in selection if col not in ["resource_id", "word"]])
 
     def get_selection_str(resource_config):
-        res = selection_str
+        res = [selection_str] if selection_str else []
         if "resource_id" in selection:
-            res += f", '{resource_config.resource_id}' as resource_id"
+            res.append(f"'{resource_config.resource_id}' as resource_id")
         if "word" in selection:
-            res += f", `{resource_config.word}` as word"
-        return res
+            res.append(f"`{resource_config.word}` as word")
+        return ", ".join(res)
 
     return [
         f"SELECT {get_selection_str(resource_config)} FROM `{resource_config.resource_id}` {as_sql(resource_config.word, q)}"
