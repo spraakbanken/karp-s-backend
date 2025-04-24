@@ -4,7 +4,7 @@ from typing import Iterable, Iterator
 import mysql.connector
 from mysql.connector.connection import MySQLConnection
 
-from karps.config import Config
+from karps.config import Config, ResourceConfig
 from karps.query.query import Query, as_sql
 
 
@@ -17,20 +17,25 @@ def get_connection(config: Config) -> MySQLConnection:
     )
 
 
-def get_search(resources: list[str], q: Query | None, selection: Iterable[str] = ("*")) -> list[str]:
+def get_search(resources: list[ResourceConfig], q: Query | None, selection: Iterable[str] = ("*")) -> list[str]:
     """
     For each resource, creates a select statement with a where clause with constraints from q
     """
     # don't send in resource_id here since it is not actually a column
-    selection_str = ", ".join([col for col in selection if col != "resource_id"])
+    selection_str = ", ".join([col for col in selection if col not in ["resource_id", "word"]])
 
-    def get_selection_str(resource_id):
+    def get_selection_str(resource_config):
+        res = selection_str
         if "resource_id" in selection:
-            return f"{selection_str}, '{resource_id}' as resource_id"
-        return selection_str
+            res += f", '{resource_config.resource_id}' as resource_id"
+        if "word" in selection:
+            res += f", `{resource_config.word}` as word"
+        return res
 
-    where_clause = as_sql(q)
-    return [f"SELECT {get_selection_str(resource_id)} FROM `{resource_id}` {where_clause}" for resource_id in resources]
+    return [
+        f"SELECT {get_selection_str(resource_config)} FROM `{resource_config.resource_id}` {as_sql(resource_config.word, q)}"
+        for resource_config in resources
+    ]
 
 
 def add_size(s: list[str], size, _from):
