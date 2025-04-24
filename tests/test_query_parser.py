@@ -7,7 +7,8 @@ def test_parse():
     assert q.field == "field"
     assert q.value == "value"
 
+
 def test_sql_query():
     ast = parse_query("equals|field|value")
-    sql_str = as_sql(ast)
+    sql_str = as_sql("", ast)
     assert sql_str == "WHERE `field` = 'value'"

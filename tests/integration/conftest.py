@@ -23,8 +23,8 @@ class Backend:
         response = self.get("/config")
         return ConfigResponse(**response.json())
 
-    def search(self, resource_ids: list[str], q_str: str="") -> SearchResult:
-        response = self.get(f"/search?resources={",".join(resource_ids)}&{q_str}")
+    def search(self, resource_ids: list[str], q_str: str = "") -> SearchResult:
+        response = self.get(f"/search?resources={','.join(resource_ids)}&{q_str}")
         json_data = response.json()
         return SearchResult(**json_data)
 
@@ -49,7 +49,8 @@ class Backend:
 
 def is_debugger_attached():
     try:
-        import debugpy # type: ignore
+        import debugpy  # type: ignore
+
         return debugpy.is_client_connected()
     except:  # noqa: E722
         return sys.gettrace() is not None
