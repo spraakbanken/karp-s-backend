@@ -8,6 +8,9 @@ from karps.config import Config, ResourceConfig
 from karps.query.query import Query, as_sql
 
 
+selection_match_regexp = re.compile("SELECT (.*) FROM")
+
+
 def get_connection(config: Config) -> MySQLConnection:
     return mysql.connector.connect(
         host=config.host,
@@ -38,12 +41,19 @@ def get_search(resources: list[ResourceConfig], q: Query | None, selection: Iter
     ]
 
 
-def add_size(s: list[str], size, _from):
-    selection_match_regexp = re.compile("SELECT (.*) FROM")
-    for search in s:
-        selection_str = re.match(selection_match_regexp, search)[1]
-        # return the original query with LIMIT + OFFSET and an additional query for counting totals
-        yield search + f" LIMIT {size} OFFSET {_from}", search.replace(selection_str, "COUNT(*)")
+def add_size(s: str, size: int, _from: int) -> tuple[str, str]:
+    """
+    Takes an SQL query without LIMIT or OFFSET and creates a query for one page and for counting totals
+
+    :param s: An SQL-query
+    :param size: The number of hits to size the query to
+    :param _from: Offset / the row to start from
+    :return: A tuple consisting of one sized query and one query for totals
+    """
+    # extract the string between SELECT and FROM
+    selection_str = re.match(selection_match_regexp, s)[1]
+    # return the original query with LIMIT + OFFSET and an additional query for counting totals
+    return s + f" LIMIT {size} OFFSET {_from}", s.replace(selection_str, "COUNT(*)")
 
 
 def add_aggregation(s: list[str], compile: list[str], columns: list[str]) -> str:
@@ -82,23 +92,32 @@ def get_cursor(config: Config) -> object:
         connection.close()
 
 
-def run_paged_searches(config: Config, sql_queries: Iterable[Iterable[str]]) -> Iterator[list[tuple]]:
-    res = []
-    with get_cursor(config) as cursor:
-        for paged_query, count_query in sql_queries:
-            cursor.execute(paged_query)
-            columns = [desc[0] for desc in cursor.description]
-            results = cursor.fetchall()
-            cursor.execute(count_query)
-            total = cursor.fetchall()[0][0]
-            res.append((columns, results, total))
-    return res
+def fetchall(cursor, sql):
+    cursor.execute(sql)
+    columns = [desc[0] for desc in cursor.description]
+    return columns, cursor.fetchall()
 
 
 def run_searches(config: Config, sql_queries: Iterable[str]) -> Iterator[list[tuple]]:
+    for columns, result, _ in run_paged_searches(config, sql_queries, paged=False):
+        yield columns, result
+
+
+def run_paged_searches(
+    config: Config, sql_queries: Iterable[str], size: int = 10, _from: int = 0, paged=True
+) -> Iterator[list[tuple]]:
+    if paged:
+        sql_queries = [add_size(s, size, _from) for s in sql_queries]
+    else:
+        sql_queries = [(s, None) for s in sql_queries]
+    res = []
     with get_cursor(config) as cursor:
-        for sql_query in sql_queries:
-            cursor.execute(sql_query)
-            columns = [desc[0] for desc in cursor.description]
-            results = cursor.fetchall()
-            yield columns, results
+        for sql_query, count_query in sql_queries:
+            columns, result = fetchall(cursor, sql_query)
+            if count_query:
+                _, count_result = fetchall(cursor, count_query)
+                total = count_result[0][0]
+            else:
+                total = None
+            res.append((columns, result, total))
+    return res

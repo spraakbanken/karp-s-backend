@@ -1,7 +1,7 @@
 import json
 from typing import Iterable
 from karps.config import Config, ResourceConfig, format_hit
-from karps.database import add_aggregation, add_size, run_paged_searches, run_searches, get_search
+from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
 from karps.models import LexiconResult, SearchResult
 from karps.query.query import parse_query
 
@@ -11,9 +11,7 @@ def search(
 ) -> SearchResult:
     s = get_search(resources, parse_query(q))
 
-    sized_s = add_size(s, size, _from)
-
-    results = zip(resources, run_paged_searches(config, sized_s))
+    results = zip(resources, run_paged_searches(config, s, size=size, _from=_from))
 
     total = 0
     lexicon_results = {}
