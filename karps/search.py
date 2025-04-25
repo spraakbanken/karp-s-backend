@@ -1,17 +1,17 @@
 import json
 from typing import Iterable
-from karps.config import Config, ResourceConfig, format_hit
+from karps.config import Env, ResourceConfig, format_hit
 from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
 from karps.models import LexiconResult, SearchResult
 from karps.query.query import parse_query
 
 
 def search(
-    config: Config, main_config, resources: list[ResourceConfig], q: str | None = None, size: int = 10, _from: int = 0
+    env: Env, main_config, resources: list[ResourceConfig], q: str | None = None, size: int = 10, _from: int = 0
 ) -> SearchResult:
     s = get_search(resources, parse_query(q))
 
-    results = zip(resources, run_paged_searches(config, s, size=size, _from=_from))
+    results = zip(resources, run_paged_searches(env, s, size=size, _from=_from))
 
     total = 0
     lexicon_results = {}
@@ -24,7 +24,7 @@ def search(
 
 
 def count(
-    config: Config,
+    config: Env,
     resources: list[ResourceConfig],
     q: str | None = None,
     compile: Iterable[str] = (),

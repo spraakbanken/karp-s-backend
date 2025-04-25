@@ -4,14 +4,14 @@ from typing import Iterable, Iterator
 import mysql.connector
 from mysql.connector.connection import MySQLConnection
 
-from karps.config import Config, ResourceConfig
+from karps.config import Env, ResourceConfig
 from karps.query.query import Query, as_sql
 
 
 selection_match_regexp = re.compile("SELECT (.*) FROM")
 
 
-def get_connection(config: Config) -> MySQLConnection:
+def get_connection(config: Env) -> MySQLConnection:
     return mysql.connector.connect(
         host=config.host,
         user=config.user,
@@ -82,7 +82,7 @@ def add_aggregation(s: list[str], compile: list[str], columns: list[str]) -> str
 
 
 @contextmanager
-def get_cursor(config: Config) -> object:
+def get_cursor(config: Env) -> object:
     connection = get_connection(config)
     try:
         cursor = connection.cursor()
@@ -98,13 +98,13 @@ def fetchall(cursor, sql):
     return columns, cursor.fetchall()
 
 
-def run_searches(config: Config, sql_queries: Iterable[str]) -> Iterator[list[tuple]]:
+def run_searches(config: Env, sql_queries: Iterable[str]) -> Iterator[list[tuple]]:
     for columns, result, _ in run_paged_searches(config, sql_queries, paged=False):
         yield columns, result
 
 
 def run_paged_searches(
-    config: Config, sql_queries: Iterable[str], size: int = 10, _from: int = 0, paged=True
+    config: Env, sql_queries: Iterable[str], size: int = 10, _from: int = 0, paged=True
 ) -> Iterator[list[tuple]]:
     if paged:
         sql_queries = [add_size(s, size, _from) for s in sql_queries]

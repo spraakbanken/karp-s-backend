@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from karps.config import Config, ConfigResponse, get_config, get_resource_config, get_resource_configs, load_config
+from karps.config import Env, ConfigResponse, get_env, get_resource_config, get_resource_configs, load_config
 from karps.search import count, search
 from karps.models import CountResult, SearchResult
 
@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 
-config: Config = get_config()
+env: Env = get_env()
 
 
 compile_param_description = """
@@ -90,12 +90,12 @@ def get_resources_param():
 
 
 @app.get("/config", summary="Get config", response_model_exclude_unset=True)
-def get_config() -> ConfigResponse:
+def get_env() -> ConfigResponse:
     """
     Returns a description of contents of each installed resource/lexicon. For example the available fields and their types.
     """
-    config = load_config()
-    return ConfigResponse(tags=config.tags, fields=config.fields, resources=get_resource_configs())
+    config = load_config(env)
+    return ConfigResponse(tags=config.tags, fields=config.fields, resources=get_resource_configs(env))
 
 
 @app.get("/search", summary="Search")
@@ -108,9 +108,9 @@ def do_search(
     """
     From each provided resource, return the entries that match the query q.
     """
-    main_config = get_config()
-    resource_configs = [get_resource_config(resource) for resource in resources]
-    return search(config, main_config, resource_configs, q=q, size=size, _from=_from)
+    main_config = get_env()
+    resource_configs = [get_resource_config(env, resource) for resource in resources]
+    return search(env, main_config, resource_configs, q=q, size=size, _from=_from)
 
 
 @app.get("/count", summary="Count")

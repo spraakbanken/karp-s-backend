@@ -1,7 +1,9 @@
+from contextlib import contextmanager
 from dataclasses import dataclass
 import json
+import os
 from typing import Iterator, Optional
-from environs import Env
+import environs
 import glob
 
 from pydantic import ConfigDict, RootModel
@@ -11,22 +13,23 @@ from karps.models import BaseModel
 
 
 @dataclass
-class Config:
+class Env:
     host: str
     user: str
     password: str
     database: str
+    base_path: str | None
 
-
-def get_config():
-    env = Env()
+def get_env() -> Env:
+    env = environs.Env()
     env.read_env()
 
-    return Config(
+    return Env(
         host=env.str("DB_HOST"),
         user=env.str("DB_USER"),
         password=env.str("DB_PASSWORD"),
         database=env.str("DB_DATABASE"),
+        base_path=env.str("BASE_PATH", None),
     )
 
 
@@ -74,25 +77,36 @@ class MainConfig(BaseModel):
     tags: dict[str, Tag]
     fields: dict[str, Field]
 
+@contextmanager
+def open_local(config: Env, path):
+    fp = None
+    try:
+        config.base_path
+        fp = open(os.path.join(config.base_path or ".", path))
+        yield fp
+    finally:
+        if fp:
+            fp.close()
 
-def get_resource_configs(resource_id: str | None = None) -> Iterator[ResourceConfig]:
+
+def get_resource_configs(config: Env, resource_id: str | None = None) -> Iterator[ResourceConfig]:
     if resource_id:
         glob_pattern = f"{resource_id}.yaml"
     else:
         glob_pattern = "*"
-    for resource in glob.glob(f"config/resources/{glob_pattern}"):
-        with open(resource) as fp:
+    for resource in glob.glob(os.path.join(config.base_path, f"config/resources/{glob_pattern}")):
+        with open_local(config, resource) as fp:
             yield ResourceConfig(**yaml.safe_load(fp))
 
 
-def get_resource_config(resource_id) -> ResourceConfig:
-    return next(get_resource_configs(resource_id))
+def get_resource_config(env: Env, resource_id) -> ResourceConfig:
+    return next(get_resource_configs(env, resource_id))
 
 
-def load_config() -> MainConfig:
-    with open("config/config.yaml") as fp:
+def load_config(env: Env) -> MainConfig:
+    with open_local(env, "config/config.yaml") as fp:
         main = yaml.safe_load(fp)
-    with open("config/fields.yaml") as fp:
+    with open_local(env, "config/fields.yaml") as fp:
         fields = yaml.safe_load(fp)
     main["fields"] = {field["name"]: field for field in fields}
     return MainConfig(**main)
