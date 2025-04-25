@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 import tatsu
+import importlib
 
 
-with open("karps/query/query.ebnf") as fp:
+with importlib.resources.files("karps.query").joinpath("query.ebnf").open() as fp:
     grammar = fp.read()
     parser = tatsu.compile(grammar)
 

@@ -1,4 +1,3 @@
 config
 .venv
 .env
-test_integration.py
