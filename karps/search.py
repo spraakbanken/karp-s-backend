@@ -36,7 +36,7 @@ def count(
     columns: Iterable[tuple[str, str]] = (),
 ) -> tuple[list[str], list[list[object]]]:
     flattened_columns = [item for sublist in columns or () for item in sublist]
-    s = get_search(resources, parse_query(q), selection=list(compile) + flattened_columns)
+    s = get_search(resources, parse_query(q), selection=set(list(compile) + flattened_columns))
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
 
     result = []
