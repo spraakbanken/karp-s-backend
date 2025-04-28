@@ -1,8 +1,10 @@
 from contextlib import contextmanager
 import re
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Sequence, cast
 import mysql.connector
-from mysql.connector.connection import MySQLConnection
+from mysql.connector.abstracts import MySQLConnectionAbstract
+from mysql.connector.cursor import MySQLCursor
+from mysql.connector.pooling import PooledMySQLConnection
 
 from karps.config import Env, ResourceConfig
 from karps.query.query import Query, as_sql
@@ -11,7 +13,7 @@ from karps.query.query import Query, as_sql
 selection_match_regexp = re.compile("SELECT (.*) FROM")
 
 
-def get_connection(config: Env) -> MySQLConnection:
+def get_connection(config: Env) -> PooledMySQLConnection | MySQLConnectionAbstract:
     return mysql.connector.connect(
         host=config.host,
         user=config.user,
@@ -51,12 +53,15 @@ def add_size(s: str, size: int, _from: int) -> tuple[str, str]:
     :return: A tuple consisting of one sized query and one query for totals
     """
     # extract the string between SELECT and FROM
-    selection_str = re.match(selection_match_regexp, s)[1]
+    matches = re.match(selection_match_regexp, s)
+    if not matches:
+        raise RuntimeError("Error adding page sizes")
+    selection_str = matches[1]
     # return the original query with LIMIT + OFFSET and an additional query for counting totals
     return s + f" LIMIT {size} OFFSET {_from}", s.replace(selection_str, "COUNT(*)")
 
 
-def add_aggregation(s: list[str], compile: list[str], columns: list[str]) -> str:
+def add_aggregation(s: list[str], compile: Sequence[str], columns: list[str]) -> str:
     """
     Takes a string containing an list of SQL queries and does aggregations on
     the fields given in columns
@@ -77,40 +82,44 @@ def add_aggregation(s: list[str], compile: list[str], columns: list[str]) -> str
 
     # TODO add sort by *all* the compile parameters
     sort_sql = f"ORDER BY {compile[0]}"
-    s = " ".join((select_sql, data_sql, groupby_sql, sort_sql))
-    return s
+    res = " ".join((select_sql, data_sql, groupby_sql, sort_sql))
+    return res
 
 
 @contextmanager
-def get_cursor(config: Env) -> object:
+def get_cursor(config: Env) -> Iterator[MySQLCursor]:
     connection = get_connection(config)
+    cursor = None
     try:
-        cursor = connection.cursor()
+        # When connection.cursor is called without arguments, a MySQLCursor-instance is returned
+        #   Explicitly casting improves type hints from cursor-methods such as fetchall
+        cursor = cast(MySQLCursor, connection.cursor())
         yield cursor
     finally:
-        cursor.close()
+        if cursor:
+            cursor.close()
         connection.close()
 
 
-def fetchall(cursor, sql):
+def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
     cursor.execute(sql)
-    columns = [desc[0] for desc in cursor.description]
+    columns = [desc[0] for desc in cursor.description or ()]
     return columns, cursor.fetchall()
 
 
-def run_searches(config: Env, sql_queries: Iterable[str]) -> Iterator[list[tuple]]:
+def run_searches(config: Env, sql_queries: Iterable[str]) -> Iterator[tuple]:
     for columns, result, _ in run_paged_searches(config, sql_queries, paged=False):
         yield columns, result
 
 
 def run_paged_searches(
-    config: Env, sql_queries: Iterable[str], size: int = 10, _from: int = 0, paged=True
-) -> Iterator[list[tuple]]:
+    config: Env, in_sql_queries: Iterable[str], size: int = 10, _from: int = 0, paged=True
+) -> Iterable[tuple]:
     if paged:
-        sql_queries = [add_size(s, size, _from) for s in sql_queries]
+        sql_queries = [add_size(s, size, _from) for s in in_sql_queries]
     else:
-        sql_queries = [(s, None) for s in sql_queries]
-    res = []
+        sql_queries = [(s, None) for s in in_sql_queries]
+    res: list[tuple] = []
     with get_cursor(config) as cursor:
         for sql_query, count_query in sql_queries:
             columns, result = fetchall(cursor, sql_query)

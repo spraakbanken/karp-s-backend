@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import tatsu
-import importlib
+import importlib.resources
 
 
 with importlib.resources.files("karps.query").joinpath("query.ebnf").open() as fp:
@@ -16,12 +16,12 @@ class Query:
     Currently, support in this class in very limited
     """
 
-    op: str = None
-    field: str = None
-    value: object = None
+    op: str | None = None
+    field: str | None = None
+    value: object | None = None
 
 
-def parse_query(q: str | None) -> Query:
+def parse_query(q: str | None) -> Query | None:
     if q:
         ast = parser.parse(q)
         if isinstance(ast.arg, list):
