@@ -1,6 +1,6 @@
 import json
 from typing import Iterable, Sequence
-from karps.config import Env, MainConfig, ResourceConfig, format_hit
+from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist
 from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
 from karps.models import HitResponse, LexiconResult, SearchResult
 from karps.query.query import parse_query
@@ -36,7 +36,9 @@ def count(
     columns: Iterable[tuple[str, str]] = (),
 ) -> tuple[list[str], list[list[object]]]:
     flattened_columns = [item for sublist in columns or () for item in sublist]
-    s = get_search(resources, parse_query(q), selection=set(list(compile) + flattened_columns))
+    selection = set(list(compile) + flattened_columns)
+    ensure_fields_exist(resources, selection)
+    s = get_search(resources, parse_query(q), selection=selection)
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
 
     result = []
