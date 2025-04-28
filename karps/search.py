@@ -1,13 +1,18 @@
 import json
-from typing import Iterable
-from karps.config import Env, ResourceConfig, format_hit
+from typing import Iterable, Sequence
+from karps.config import Env, MainConfig, ResourceConfig, format_hit
 from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
-from karps.models import LexiconResult, SearchResult
+from karps.models import HitResponse, LexiconResult, SearchResult
 from karps.query.query import parse_query
 
 
 def search(
-    env: Env, main_config, resources: list[ResourceConfig], q: str | None = None, size: int = 10, _from: int = 0
+    env: Env,
+    main_config: MainConfig,
+    resources: list[ResourceConfig],
+    q: str | None = None,
+    size: int = 10,
+    _from: int = 0,
 ) -> SearchResult:
     s = get_search(resources, parse_query(q))
 
@@ -16,7 +21,7 @@ def search(
     total = 0
     lexicon_results = {}
     for resource_config, (_, hits, lexicon_total) in results:
-        hits = [{"entry": format_hit(main_config, resource_config, hit)} for hit in hits]
+        hits = [HitResponse(**{"entry": format_hit(main_config, resource_config, hit)}) for hit in hits]
         lexicon_results[resource_config.resource_id] = LexiconResult(hits=hits, total=lexicon_total)
         total += lexicon_total
 
@@ -27,11 +32,11 @@ def count(
     config: Env,
     resources: list[ResourceConfig],
     q: str | None = None,
-    compile: Iterable[str] = (),
-    columns: Iterable[str] = (),
+    compile: Sequence[str] = (),
+    columns: Iterable[tuple[str, str]] = (),
 ) -> tuple[list[str], list[list[object]]]:
     flattened_columns = [item for sublist in columns or () for item in sublist]
-    s = get_search(resources, parse_query(q), selection=compile + flattened_columns)
+    s = get_search(resources, parse_query(q), selection=list(compile) + flattened_columns)
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
 
     result = []

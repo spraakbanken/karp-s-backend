@@ -1,3 +1,4 @@
+from typing import Sequence
 from fastapi import FastAPI, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -57,12 +58,17 @@ def get_list_param(**kwargs):
     """
 
     def inner(list_str: str | None = Query(**kwargs, min_length=1, pattern="^[^,]+(,[^,]+)*$")) -> list[str]:
-        return list_str.split(",")
+        return list_str.split(",") if list_str else []
 
     return inner
 
 
 def get_columns_param(name: str):
+    def twotuple(elems: Sequence[str]) -> tuple[str, str]:
+        if len(elems) != 2:
+            raise RuntimeError("columns parameter is wrongly formatted")
+        return elems[0], elems[1]
+
     # TODO if = is omitted, can we simply show the available values and use field name as heading
     # TODO RHS could be a field and an operation, for example average. like count(*) in SQL or avg(freq) where freq is a field
     def inner(
@@ -71,8 +77,8 @@ def get_columns_param(name: str):
         ),
     ) -> list[tuple[str, str]]:
         if not columns:
-            return columns
-        return [column_setting.split("=") for column_setting in columns.split(",")]
+            return []
+        return [twotuple(column_setting.split("=")) for column_setting in columns.split(",")]
 
     return inner
 
@@ -90,12 +96,12 @@ def get_resources_param():
 
 
 @app.get("/config", summary="Get config", response_model_exclude_unset=True)
-def get_env() -> ConfigResponse:
+def get_config() -> ConfigResponse:
     """
     Returns a description of contents of each installed resource/lexicon. For example the available fields and their types.
     """
     config = load_config(env)
-    return ConfigResponse(tags=config.tags, fields=config.fields, resources=get_resource_configs(env))
+    return ConfigResponse(tags=config.tags, fields=config.fields, resources=list(get_resource_configs(env)))
 
 
 @app.get("/search", summary="Search")
@@ -108,7 +114,7 @@ def do_search(
     """
     From each provided resource, return the entries that match the query q.
     """
-    main_config = get_env()
+    main_config = load_config(env)
     resource_configs = [get_resource_config(env, resource) for resource in resources]
     return search(env, main_config, resource_configs, q=q, size=size, _from=_from)
 
@@ -120,7 +126,7 @@ def do_count(
     compile: list[str] = Depends(
         get_list_param(alias="compile", title="Compile on", description=compile_param_description)
     ),
-    columns: list[list[str]] = Depends(get_columns_param("columns")),
+    columns: list[tuple[str, str]] = Depends(get_columns_param("columns")),
 ) -> CountResult:
     """
     From each provided resource, get the entries that match the query q. See http://ws.spraakbanken.gu.se/ws/karp/v7 for a description of the query language.
@@ -129,6 +135,6 @@ def do_count(
 
     Each column given in columns will be added to the result.
     """
-    resource_configs = [get_resource_config(resource) for resource in resources]
-    headers, table = count(config, resource_configs, q=q, compile=compile, columns=columns)
-    return CountResult(headers=headers, table=table)
+    resource_configs = [get_resource_config(env, resource) for resource in resources]
+    headers, table = count(env, resource_configs, q=q, compile=compile, columns=columns)
+    return CountResult.model_validate({"headers": headers, "table": table})

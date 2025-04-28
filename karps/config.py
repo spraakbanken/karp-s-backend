@@ -18,7 +18,8 @@ class Env:
     user: str
     password: str
     database: str
-    base_path: str | None
+    base_path: str = ""
+
 
 def get_env() -> Env:
     env = environs.Env()
@@ -29,7 +30,7 @@ def get_env() -> Env:
         user=env.str("DB_USER"),
         password=env.str("DB_PASSWORD"),
         database=env.str("DB_DATABASE"),
-        base_path=env.str("BASE_PATH", None),
+        base_path=env.str("BASE_PATH", ""),
     )
 
 
@@ -77,6 +78,7 @@ class MainConfig(BaseModel):
     tags: dict[str, Tag]
     fields: dict[str, Field]
 
+
 @contextmanager
 def open_local(config: Env, path):
     fp = None
@@ -112,7 +114,7 @@ def load_config(env: Env) -> MainConfig:
     return MainConfig(**main)
 
 
-def format_hit(main_config: MainConfig, resource_config: ResourceConfig, hit):
+def format_hit(main_config: MainConfig, resource_config: ResourceConfig, hit) -> dict[str, object]:
     field_lookup = main_config.fields
 
     def fmt():
