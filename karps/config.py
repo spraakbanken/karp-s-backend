@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 import json
 import os
-from typing import Iterator, Optional
+from typing import Iterable, Iterator, Optional
 import environs
 import glob
 
@@ -126,3 +126,10 @@ def format_hit(main_config: MainConfig, resource_config: ResourceConfig, hit) ->
             yield field.name, val
 
     return dict(fmt())
+
+
+def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
+    for resource in resources:
+        for field in fields:
+            if field != "resource_id" and field not in resource.fields:
+                raise RuntimeError(f"{field} does not exist in {resource.resource_id}")
