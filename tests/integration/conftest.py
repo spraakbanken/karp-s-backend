@@ -2,13 +2,14 @@ from contextlib import contextmanager
 import multiprocessing
 import sys
 from time import sleep
+from typing import Iterable
 import pytest
 import requests
 import uvicorn
 
 from karps.api import app
 from karps.config import ConfigResponse
-from karps.models import SearchResult
+from karps.models import CountResult, SearchResult
 
 
 class Backend:
@@ -27,6 +28,19 @@ class Backend:
         response = self.get(f"/search?resources={','.join(resource_ids)}&{q_str}")
         json_data = response.json()
         return SearchResult(**json_data)
+
+    def count(
+        self,
+        resource_ids: list[str],
+        q_str: str = "",
+        compile: Iterable[str] = ("word",),
+        columns: str = "resource_id=partOfSpeech",
+    ) -> CountResult:
+        response = self.get(
+            f"/count?resources={','.join(resource_ids)}&{q_str}&compile={','.join(compile)}&columns={columns}"
+        )
+        json_data = response.json()
+        return CountResult(**json_data)
 
     def run_app(self):
         uvicorn.run(app, host="127.0.0.1", port=self.port)
