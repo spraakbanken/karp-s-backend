@@ -131,5 +131,5 @@ def format_hit(main_config: MainConfig, resource_config: ResourceConfig, hit) ->
 def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
     for resource in resources:
         for field in fields:
-            if field != "resource_id" and field not in resource.fields:
+            if field not in ("resource_id", "word") and field not in resource.fields:
                 raise RuntimeError(f"{field} does not exist in {resource.resource_id}")
