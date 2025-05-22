@@ -1,4 +1,3 @@
-import json
 from typing import Iterable, Sequence
 from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist
 from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
@@ -57,7 +56,7 @@ def count(
         tmp_row = list(row[1:last_index])
         entry_data = {}
         if flattened_columns:
-            for elem in json.loads(row[-1]):
+            for elem in row[-1]:
                 for [col_name, col_val] in columns:
                     entry_data[elem[col_name]] = elem[col_val]
                     entry_headers.add(elem[col_name])
