@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import json
 import re
 from typing import Iterable, Iterator, Sequence, cast
 import mysql.connector
@@ -108,13 +109,18 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
     return columns, cursor.fetchall()
 
 
-def run_searches(config: Env, sql_queries: Iterable[str]) -> Iterator[tuple]:
-    for columns, result, _ in run_paged_searches(config, sql_queries, paged=False):
+def run_searches(config: Env, sql_queries: Iterable[str], json_fields: Sequence = ("wordforms",)) -> Iterator[tuple]:
+    for columns, result, _ in run_paged_searches(config, sql_queries, paged=False, json_fields=json_fields):
         yield columns, result
 
 
 def run_paged_searches(
-    config: Env, in_sql_queries: Iterable[str], size: int = 10, _from: int = 0, paged=True
+    config: Env,
+    in_sql_queries: Iterable[str],
+    size: int = 10,
+    _from: int = 0,
+    paged=True,
+    json_fields: Sequence = ("wordforms",),
 ) -> Iterable[tuple]:
     if paged:
         sql_queries = [add_size(s, size, _from) for s in in_sql_queries]
@@ -129,5 +135,24 @@ def run_paged_searches(
                 total = count_result[0][0]
             else:
                 total = None
-            res.append((columns, result, total))
+
+            # TODO do this in lazily
+            new_result = []
+            for row in result:
+                new_row = []
+                for i, column in enumerate(columns):
+                    if column == "entry_data":
+                        entries_data = json.loads(str(row[i]))
+                        if json_fields:
+                            for entry_data in entries_data:
+                                for json_field in json_fields:
+                                    if json_field in entry_data:
+                                        # MariaDB 10.6.21 autoparses JSON, MariaDB 10.3.39 does not, we need to handle both
+                                        if not isinstance(entry_data[json_field], list):
+                                            entry_data[json_field] = json.loads(entry_data[json_field])
+                        new_row.append(entries_data)
+                    else:
+                        new_row.append(row[i])
+                new_result.append(new_row)
+            res.append((columns, new_result, total))
     return res
