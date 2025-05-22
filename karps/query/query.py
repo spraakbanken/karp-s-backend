@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import tatsu
 import importlib.resources
 
+from karps.errors import errors
 
 with importlib.resources.files("karps.query").joinpath("query.ebnf").open() as fp:
     grammar = fp.read()
@@ -23,7 +24,10 @@ class Query:
 
 def parse_query(q: str | None) -> Query | None:
     if q:
-        ast = parser.parse(q)
+        try:
+            ast = parser.parse(q)
+        except tatsu.exceptions.FailedParse as e:
+            raise errors.UserError("Parse error: " + e.message)
         if isinstance(ast.arg, list):
             arg = "".join(ast.arg)
         else:
@@ -71,6 +75,6 @@ def as_sql(word_column: str, q: Query | None) -> str:
         op_arg = f">= '{q.value}'"
     else:
         # this should not happen since the query parser would not accept other operators
-        raise RuntimeError("unknown operator in query")
+        raise errors.InternalError("unknown operator in query")
     where_clause = f"WHERE `{field}` {op_arg}"
     return where_clause

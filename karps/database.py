@@ -8,6 +8,7 @@ from mysql.connector.pooling import PooledMySQLConnection
 
 from karps.config import Env, ResourceConfig
 from karps.query.query import Query, as_sql
+from karps.errors import errors
 
 
 selection_match_regexp = re.compile("SELECT (.*) FROM")
@@ -55,7 +56,7 @@ def add_size(s: str, size: int, _from: int) -> tuple[str, str]:
     # extract the string between SELECT and FROM
     matches = re.match(selection_match_regexp, s)
     if not matches:
-        raise RuntimeError("Error adding page sizes")
+        raise errors.InternalError("Error adding page sizes")
     selection_str = matches[1]
     # return the original query with LIMIT + OFFSET and an additional query for counting totals
     return s + f" LIMIT {size} OFFSET {_from}", s.replace(selection_str, "COUNT(*)")
