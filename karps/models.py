@@ -34,3 +34,7 @@ type Scalar = str | int | bool
 class CountResult(BaseModel):
     headers: list[str]
     table: list[list[Scalar | list[Scalar] | None]]
+
+
+class UserErrorSchema(BaseModel):
+    message: str

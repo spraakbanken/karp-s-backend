@@ -1,10 +1,12 @@
 from typing import Sequence
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, Query, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from karps.config import Env, ConfigResponse, get_env, get_resource_config, get_resource_configs, load_config
 from karps.search import count, search
-from karps.models import CountResult, SearchResult
+from karps.models import CountResult, SearchResult, UserErrorSchema
+from karps.errors import errors
 
 api_description = """
 Språkbanken has many lexical resources, listed on our [webpage](https://spraakbanken.gu.se/resurser/lexicon).
@@ -30,6 +32,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(errors.UserError)
+async def unicorn_exception_handler(request: Request, exc: errors.UserError):
+    return JSONResponse(
+        status_code=500,
+        content={"message": str(exc)},
+    )
 
 
 env: Env = get_env()
@@ -66,7 +76,7 @@ def get_list_param(**kwargs):
 def get_columns_param(name: str):
     def twotuple(elems: Sequence[str]) -> tuple[str, str]:
         if len(elems) != 2:
-            raise RuntimeError("columns parameter is wrongly formatted")
+            raise errors.UserError("Columns parameter is wrongly formatted")
         return elems[0], elems[1]
 
     # TODO if = is omitted, can we simply show the available values and use field name as heading
@@ -91,6 +101,9 @@ def get_q_param():
     )
 
 
+default_500 = {500: {"description": "Application error", "model": UserErrorSchema}}
+
+
 def get_resources_param():
     return get_list_param(alias="resources", title="Resources", description=resources_param_description)
 
@@ -104,7 +117,7 @@ def get_config() -> ConfigResponse:
     return ConfigResponse(tags=config.tags, fields=config.fields, resources=list(get_resource_configs(env)))
 
 
-@app.get("/search", summary="Search")
+@app.get("/search", summary="Search", responses=default_500)
 def do_search(
     resources: list[str] = Depends(get_resources_param()),
     q: str | None = get_q_param(),
@@ -119,7 +132,7 @@ def do_search(
     return search(env, main_config, resource_configs, q=q, size=size, _from=_from)
 
 
-@app.get("/count", summary="Count")
+@app.get("/count", summary="Count", responses=default_500)
 def do_count(
     resources: list[str] = Depends(get_resources_param()),
     q: str | None = get_q_param(),
@@ -137,4 +150,5 @@ def do_count(
     """
     resource_configs = [get_resource_config(env, resource) for resource in resources]
     headers, table = count(env, resource_configs, q=q, compile=compile, columns=columns)
-    return CountResult.model_validate({"headers": headers, "table": table})
+    res = CountResult.model_validate({"headers": headers, "table": table})
+    return res

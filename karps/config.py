@@ -6,6 +6,7 @@ from typing import Iterable, Iterator, Optional
 import environs
 import glob
 
+from karps.errors import errors
 from pydantic import ConfigDict, RootModel
 import yaml
 
@@ -101,8 +102,11 @@ def get_resource_configs(config: Env, resource_id: str | None = None) -> Iterato
             yield ResourceConfig(**yaml.safe_load(fp))
 
 
-def get_resource_config(env: Env, resource_id) -> ResourceConfig:
-    return next(get_resource_configs(env, resource_id))
+def get_resource_config(env: Env, resource_id) -> ResourceConfig | None:
+    try:
+        return next(get_resource_configs(env, resource_id))
+    except StopIteration:
+        raise errors.UserError("One or more of the resources are missing")
 
 
 def load_config(env: Env) -> MainConfig:
@@ -132,4 +136,4 @@ def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
     for resource in resources:
         for field in fields:
             if field not in ("resource_id", "word") and field not in resource.fields:
-                raise RuntimeError(f"{field} does not exist in {resource.resource_id}")
+                raise errors.UserError(f"{field} does not exist in {resource.resource_id}")
