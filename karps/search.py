@@ -1,5 +1,5 @@
 from typing import Iterable, Sequence
-from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist
+from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_json_fields
 from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
 from karps.models import HitResponse, LexiconResult, SearchResult
 from karps.query.query import parse_query
@@ -15,7 +15,10 @@ def search(
 ) -> SearchResult:
     s = get_search(resources, parse_query(q))
 
-    results = zip(resources, run_paged_searches(env, s, size=size, _from=_from))
+    results = zip(
+        resources,
+        run_paged_searches(env, s, size=size, _from=_from, json_fields=get_json_fields(main_config, resources)),
+    )
 
     total = 0
     lexicon_results = {}
@@ -28,7 +31,8 @@ def search(
 
 
 def count(
-    config: Env,
+    env: Env,
+    main_config: MainConfig,
     resources: list[ResourceConfig],
     q: str | None = None,
     compile: Sequence[str] = (),
@@ -41,7 +45,7 @@ def count(
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
 
     result = []
-    headers, res = next(run_searches(config, [agg_s]))
+    headers, res = next(run_searches(env, [agg_s], json_fields=get_json_fields(main_config, resources)))
 
     if flattened_columns:
         last_index = -1

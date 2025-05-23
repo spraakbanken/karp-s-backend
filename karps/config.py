@@ -137,3 +137,12 @@ def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
         for field in fields:
             if field not in ("resource_id", "word") and field not in resource.fields:
                 raise errors.UserError(f"{field} does not exist in {resource.resource_id}")
+
+
+def get_json_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> list[str]:
+    fields = []
+    for resource in resources:
+        for field in resource.fields:
+            if main_config.fields[field].collection:
+                fields.append(field)
+    return fields

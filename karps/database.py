@@ -109,7 +109,7 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
     return columns, cursor.fetchall()
 
 
-def run_searches(config: Env, sql_queries: Iterable[str], json_fields: Sequence = ("wordforms",)) -> Iterator[tuple]:
+def run_searches(config: Env, sql_queries: Iterable[str], json_fields: Sequence = ()) -> Iterator[tuple]:
     for columns, result, _ in run_paged_searches(config, sql_queries, paged=False, json_fields=json_fields):
         yield columns, result
 
@@ -120,8 +120,8 @@ def run_paged_searches(
     size: int = 10,
     _from: int = 0,
     paged=True,
-    json_fields: Sequence = ("wordforms",),
-) -> Iterable[tuple]:
+    json_fields: Sequence = (),
+) -> list[tuple[Sequence[str], None, int | None]]:
     if paged:
         sql_queries = [add_size(s, size, _from) for s in in_sql_queries]
     else:
