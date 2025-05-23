@@ -15,7 +15,7 @@ class BaseModel(pydantic.BaseModel):
 
 class HitResponse(BaseModel):
     # entry can be anything
-    entry: dict
+    entry: dict[str, object]
 
 
 class LexiconResult(BaseModel):

@@ -17,3 +17,15 @@ Install using `uv sync`.
 Add dependencies using `uv add <dep>`, remove using `uv remove <dep>`.
 
 Upgrade existing dependencies using `uv lock --upgrade`.
+
+## Typechecking
+
+This code is type-checked using Pyright, see `pyrightconfig.json` for settings. Pyright is a NPM tool, an example of how to install it:
+
+```
+mkdir pyright
+cd pyright
+npm install pyright
+PATH=$PATH:$PWD/pyright/node_modules/.bin/
+```
+

@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Any, Sequence
 from fastapi import FastAPI, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,12 +62,16 @@ The total and values in compile will always be shown and does not need to be add
 """
 
 
-def get_list_param(**kwargs):
+def get_list_param(alias: str, title: str, description: str):
     """
     Used for comma-separated query parameters
     """
 
-    def inner(list_str: str | None = Query(**kwargs, min_length=1, pattern="^[^,]+(,[^,]+)*$")) -> list[str]:
+    def inner(
+        list_str: str | None = Query(
+            alias=alias, title=title, description=description, min_length=1, pattern="^[^,]+(,[^,]+)*$"
+        ),
+    ) -> list[str]:
         return list_str.split(",") if list_str else []
 
     return inner
@@ -101,7 +105,7 @@ def get_q_param():
     )
 
 
-default_500 = {500: {"description": "Application error", "model": UserErrorSchema}}
+default_500: dict[int | str, dict[str, Any]] = {500: {"description": "Application error", "model": UserErrorSchema}}
 
 
 def get_resources_param():

@@ -3,6 +3,7 @@ from karps.query.query import parse_query, as_sql
 
 def test_parse():
     q = parse_query("equals|field|value")
+    assert q
     assert q.op == "equals"
     assert q.field == "field"
     assert q.value == "value"

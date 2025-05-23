@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 import json
 import os
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator, Optional, cast
 import environs
 import glob
 
@@ -81,7 +81,7 @@ class MainConfig(BaseModel):
 
 
 @contextmanager
-def open_local(config: Env, path):
+def open_local(config: Env, path: str):
     fp = None
     try:
         config.base_path
@@ -102,7 +102,7 @@ def get_resource_configs(config: Env, resource_id: str | None = None) -> Iterato
             yield ResourceConfig(**yaml.safe_load(fp))
 
 
-def get_resource_config(env: Env, resource_id) -> ResourceConfig | None:
+def get_resource_config(env: Env, resource_id: str) -> ResourceConfig:
     try:
         return next(get_resource_configs(env, resource_id))
     except StopIteration:
@@ -118,7 +118,9 @@ def load_config(env: Env) -> MainConfig:
     return MainConfig(**main)
 
 
-def format_hit(main_config: MainConfig, resource_config: ResourceConfig, hit) -> dict[str, object]:
+def format_hit(
+    main_config: MainConfig, resource_config: ResourceConfig, hit: list[str | int | bool | None]
+) -> dict[str, object]:
     field_lookup = main_config.fields
 
     def fmt():
@@ -126,7 +128,8 @@ def format_hit(main_config: MainConfig, resource_config: ResourceConfig, hit) ->
             field = field_lookup[field_name]
             if field.collection:
                 if val is not None:
-                    val = json.loads(val)
+                    # TODO do this in database layer
+                    val = json.loads(cast(str, val))
             yield field.name, val
 
     return dict(fmt())
@@ -140,7 +143,7 @@ def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
 
 
 def get_json_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> list[str]:
-    fields = []
+    fields: list[str] = []
     for resource in resources:
         for field in resource.fields:
             if main_config.fields[field].collection:

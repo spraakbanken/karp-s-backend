@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 import json
 import re
-from typing import Iterable, Iterator, Sequence, cast
+from typing import Any, Iterable, Iterator, Sequence, cast
 import mysql.connector
 from mysql.connector.abstracts import MySQLConnectionAbstract
 from mysql.connector.cursor import MySQLCursor
@@ -109,7 +109,9 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
     return columns, cursor.fetchall()
 
 
-def run_searches(config: Env, sql_queries: Iterable[str], json_fields: Sequence = ()) -> Iterator[tuple]:
+def run_searches(
+    config: Env, sql_queries: Iterable[str], json_fields: Sequence = ()
+) -> Iterator[tuple[list[str], list[list[Any]]]]:
     for columns, result, _ in run_paged_searches(config, sql_queries, paged=False, json_fields=json_fields):
         yield columns, result
 
@@ -121,7 +123,7 @@ def run_paged_searches(
     _from: int = 0,
     paged=True,
     json_fields: Sequence = (),
-) -> list[tuple[Sequence[str], None, int | None]]:
+) -> list[tuple[list[str], list[list[Any]], int | None]]:
     if paged:
         sql_queries = [add_size(s, size, _from) for s in in_sql_queries]
     else:
