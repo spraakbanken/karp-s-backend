@@ -148,7 +148,8 @@ def do_count(
 
     Each column given in columns will be added to the result.
     """
+    main_config = load_config(env)
     resource_configs = [get_resource_config(env, resource) for resource in resources]
-    headers, table = count(env, resource_configs, q=q, compile=compile, columns=columns)
+    headers, table = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns)
     res = CountResult.model_validate({"headers": headers, "table": table})
     return res
