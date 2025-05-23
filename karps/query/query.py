@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import tatsu
+import tatsu.exceptions
 import importlib.resources
 
 from karps.errors import errors

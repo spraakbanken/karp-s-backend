@@ -1,0 +1,10 @@
+{
+    "include": [
+        "karps",
+        "tests"
+    ],
+    "reportMissingImports": "information",
+    "reportGeneralTypeIssues": "none",
+    "typeCheckingMode": "standard"
+}
+

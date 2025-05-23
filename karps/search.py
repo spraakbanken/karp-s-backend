@@ -1,6 +1,7 @@
 from typing import Iterable, Sequence
 from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_json_fields
 from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
+from karps.errors.errors import InternalError
 from karps.models import HitResponse, LexiconResult, SearchResult
 from karps.query.query import parse_query
 
@@ -24,6 +25,8 @@ def search(
     lexicon_results = {}
     for resource_config, (_, hits, lexicon_total) in results:
         hits = [HitResponse(**{"entry": format_hit(main_config, resource_config, hit)}) for hit in hits]
+        if not lexicon_total:
+            raise InternalError("Count queries failed")
         lexicon_results[resource_config.resource_id] = LexiconResult(hits=hits, total=lexicon_total)
         total += lexicon_total
 
