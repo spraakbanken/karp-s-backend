@@ -36,4 +36,4 @@ fmt:
 
 .PHONY: check-types
 check-types:
-	pyright
+	basedpyright
