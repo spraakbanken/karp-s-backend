@@ -25,7 +25,7 @@ def search(
     lexicon_results = {}
     for resource_config, (_, hits, lexicon_total) in results:
         hits = [HitResponse(**{"entry": format_hit(main_config, resource_config, hit)}) for hit in hits]
-        if not lexicon_total:
+        if lexicon_total is None:
             raise InternalError("Count queries failed")
         lexicon_results[resource_config.resource_id] = LexiconResult(hits=hits, total=lexicon_total)
         total += lexicon_total
