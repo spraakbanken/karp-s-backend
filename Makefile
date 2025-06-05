@@ -25,6 +25,10 @@ install-dev:
 serve-w-reload: install-dev
 	fastapi dev --port 9000 karps/api.py
 
+.PHONY: serve
+serve: install-dev
+	python -m uvicorn karps.api:app --port 9000
+
 .PHONY: test
 test:
 	PYTHONPATH=. pytest
