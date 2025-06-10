@@ -124,7 +124,7 @@ def format_hit(
     field_lookup = main_config.fields
 
     def fmt():
-        for field_name, val in zip(resource_config.fields, hit[:-1]):
+        for field_name, val in zip(resource_config.fields, hit):
             field = field_lookup[field_name]
             if field.collection:
                 if val is not None:
