@@ -1,0 +1,186 @@
+class SQLQuery:
+    def __init__(self, selection: list[tuple[str, str]]):
+        # tuple pair represents value (1) AS alias (2)
+        self.selection = selection
+        self.table = None
+        # where
+        self.clause = None
+        # each element will generate a CTE and a JOIN
+        self.joins = {}
+        self._group_by = None
+        self._order_by = None
+        self._from = 0
+        self.size = None
+        self.inner_queries = ()
+
+    def from_table(self, tbl_name):
+        self.table = tbl_name
+        return self
+
+    def from_inner_query(self, queries: list["SQLQuery"]) -> "SQLQuery":
+        self.inner_queries = queries
+        return self
+
+    def join(self, field, alias=None, where: tuple[(str, str)] | None = None):
+        """
+        field must be in a table with two columns, __parent_id and value
+        a CTE and a join (LEFT or INNER, depending on if there is a query on <field>)
+        """
+        self.joins[field] = (alias, where)
+        return self
+
+    def group_by(self, field):
+        self._group_by = field
+        return self
+
+    def order_by(self, sort):
+        self._order_by = sort
+        return self
+
+    def where(self, clause):
+        self.clause = clause
+        return self
+
+    def from_page(self, page):
+        self._from = page
+        return self
+
+    def add_size(self, size):
+        self.size = size
+        return self
+
+    def get_ctes(self, join) -> tuple[str | None, str | None]:
+        where = self.joins[join][1]
+        where_cte = None
+        if where:
+            where_cte = (
+                f"{join}__where AS ("
+                + (
+                    select([("__parent_id", None)])
+                    .from_table(f"{self.table}__{join}")
+                    .where(f"`{where[0]}` {where[1]}")
+                    .group_by("__parent_id")
+                    .to_string()[0]
+                )
+                + ")"
+            )
+
+        data_cte = (
+            f"{join}__data AS ("
+            + (
+                select([("__parent_id", None), ("GROUP_CONCAT(value SEPARATOR '\u001f')", self.joins[join][0] or join)])
+                .from_table(f"{self.table}__{join}")
+                .group_by("__parent_id")
+                .to_string()[0]
+            )
+            + ")"
+        )
+        return where_cte, data_cte
+
+    def to_string(self, paged=False, top_level=True) -> tuple[str, str | None]:
+        """
+        builds the query from the given parameters
+        """
+
+        # main select stmt
+        def inner(count=False) -> str:
+            s = ""
+            if top_level:
+                str_ctes = []
+                ctes = []
+                # add needed CTE for outer query
+                for join in self.joins:
+                    qs = self.get_ctes(join)
+                    ctes.append((join, qs))
+
+                # add needed CTE for inner queries
+                for inner_q in self.inner_queries:
+                    for join in inner_q.joins:
+                        qs = inner_q.get_ctes(join)
+                        ctes.append((join, qs))
+                for _, (where_cte, data_cte) in ctes:
+                    # query on collection field
+                    if where_cte:
+                        str_ctes.append(where_cte)
+                    # data fetching does not need to be done when counting
+                    if not count:
+                        str_ctes.append(data_cte)
+                if str_ctes:
+                    s = "WITH " + ", ".join(str_ctes) + " "
+
+            if count:
+                selection = "COUNT(*)"
+            else:
+                sel = []
+                for [value, alias] in self.selection:
+                    # column names needs to be quoted with backticks
+                    # TODO refactor, fix etc
+                    if (
+                        value[0] == '"'
+                        or value[0] == "'"
+                        or value[0:12] == "GROUP_CONCAT"
+                        or value[0:5] == "COUNT"
+                        or value[0:6] == "CONCAT"
+                    ):
+                        v = value
+                    else:
+                        v = f"`{value}`"
+
+                    if alias:
+                        sel.append(f"{v} AS {alias}")
+                    else:
+                        sel.append(v)
+                if not sel:
+                    selection = "__id"
+                else:
+                    selection = ", ".join(sel)
+            if self.table:
+                s += f"SELECT {selection} FROM `{self.table}`"
+            elif self.inner_queries:
+                s += (
+                    f"SELECT {selection} FROM ("
+                    + " UNION ALL ".join([s.to_string(top_level=False)[0] for s in self.inner_queries])
+                    + ") as innerq"
+                )
+            else:
+                raise RuntimeError("error in SQL generation")
+
+            # for certain queries we are working against derived tables
+            if self.joins:
+
+                # for join in inner_q.joins:
+                #     qs = inner_q.get_ctes(join)
+                #     ctes.append((join, qs))
+
+                table_prefix = f"{self.table}." if self.table else ""
+                for join_field in self.joins:
+                    # use alias or field name
+                    name = self.joins[join_field][0] or join_field
+                    if self.joins[join_field][1]:
+                        s += f" JOIN `{name}__where` ON `{name}__where`.__parent_id = {table_prefix}__id"
+
+                    # use left joins for data fetching (skip when just counting rows)
+                    if not count:
+                        s += f" LEFT JOIN `{name}__data` ON `{name}__data`.__parent_id = {table_prefix}__id"
+
+            # where for queries on data in columns, not joins
+            if self.clause:
+                s += f" WHERE {self.clause}"
+
+            if self._group_by:
+                s += f" GROUP BY `{self._group_by}`"
+
+            # count queries and inner queries should not have size limits
+            if not count and top_level and self.size is not None:
+                s += f" LIMIT {self.size} OFFSET {self._from}"
+
+            if self._order_by:
+                s += f" ORDER BY {self._order_by}"
+
+            return s
+
+        return inner(), inner(count=True) if paged and top_level else None
+
+
+def select(selection) -> SQLQuery:
+    return SQLQuery(selection)
