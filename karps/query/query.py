@@ -38,7 +38,7 @@ def parse_query(q: str | None) -> Query | None:
         return None
 
 
-def as_sql(word_column: str, q: Query | None) -> str:
+def get_query(word_column: str, q: Query | None) -> tuple[str, str] | None:
     """
     Translates a query tree into an SQL WHERE clause.
 
@@ -46,8 +46,8 @@ def as_sql(word_column: str, q: Query | None) -> str:
     :param q: The root of the query tree. If None, returns an empty string.
     :return: A string representing the SQL WHERE clause.
     """
-    if not q:
-        return ""
+    if not (q and q.field):
+        return None
 
     # If the field is "word", use the specified word_column, as it can differ across resources.
     if q.field == "word":
@@ -77,5 +77,4 @@ def as_sql(word_column: str, q: Query | None) -> str:
     else:
         # this should not happen since the query parser would not accept other operators
         raise errors.InternalError("unknown operator in query")
-    where_clause = f"WHERE `{field}` {op_arg}"
-    return where_clause
+    return field, op_arg

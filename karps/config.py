@@ -1,8 +1,7 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
-import json
 import os
-from typing import Iterable, Iterator, Optional, cast
+from typing import Iterable, Iterator, Optional
 import environs
 import glob
 
@@ -126,10 +125,6 @@ def format_hit(
     def fmt():
         for field_name, val in zip(resource_config.fields, hit):
             field = field_lookup[field_name]
-            if field.collection:
-                if val is not None:
-                    # TODO do this in database layer
-                    val = json.loads(cast(str, val))
             yield field.name, val
 
     return dict(fmt())
@@ -142,10 +137,12 @@ def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
                 raise errors.UserError(f"{field} does not exist in {resource.resource_id}")
 
 
-def get_json_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> list[str]:
-    fields: list[str] = []
+def get_collection_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> Iterable[str]:
+    fields: set[str] = set()
     for resource in resources:
         for field in resource.fields:
             if main_config.fields[field].collection:
-                fields.append(field)
+                fields.add(field)
+        if main_config.fields[resource.word].collection:
+            fields.add("word")
     return fields

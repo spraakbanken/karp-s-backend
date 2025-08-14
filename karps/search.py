@@ -1,6 +1,7 @@
 from typing import Iterable, Sequence
-from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_json_fields
-from karps.database import add_aggregation, run_paged_searches, run_searches, get_search
+from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_collection_fields
+from karps.database.database import add_aggregation, run_paged_searches, run_searches, get_search
+from karps.database.query import SQLQuery
 from karps.errors.errors import InternalError
 from karps.models import HitResponse, LexiconResult, SearchResult
 from karps.query.query import parse_query
@@ -14,11 +15,13 @@ def search(
     size: int = 10,
     _from: int = 0,
 ) -> SearchResult:
-    s = get_search(resources, parse_query(q))
+    s: list[SQLQuery] = get_search(main_config, resources, parse_query(q))
 
     results = zip(
         resources,
-        run_paged_searches(env, s, size=size, _from=_from, json_fields=get_json_fields(main_config, resources)),
+        run_paged_searches(
+            env, s, size=size, _from=_from, collection_fields=get_collection_fields(main_config, resources)
+        ),
     )
 
     total = 0
@@ -44,11 +47,11 @@ def count(
     flattened_columns = [item for sublist in columns or () for item in sublist]
     selection = set(list(compile) + flattened_columns)
     ensure_fields_exist(resources, selection)
-    s = get_search(resources, parse_query(q), selection=selection)
+    s = get_search(main_config, resources, parse_query(q), selection=selection)
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
 
     result = []
-    headers, res = next(run_searches(env, [agg_s], json_fields=get_json_fields(main_config, resources)))
+    headers, res = next(run_searches(env, [agg_s], collection_fields=get_collection_fields(main_config, resources)))
 
     if flattened_columns:
         last_index = -1
