@@ -1,289 +1,289 @@
 # serializer version: 1
 # name: test_count_compile-COLLECTION_columns-COLLECTION_query-COLLECTION[cCOLLECTION_COLLECTION_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-COLLECTION_query-None[cCOLLECTION_COLLECTION_None]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-COLLECTION_query-SCALAR[cCOLLECTION_COLLECTION_SCALAR]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-COLLECTION_query-WORD[cCOLLECTION_COLLECTION_WORD]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-None_query-COLLECTION[cCOLLECTION_None_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1` FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1` FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-None_query-None[cCOLLECTION_None_None]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1` FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1` FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-None_query-SCALAR[cCOLLECTION_None_SCALAR]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1` FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1` FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-None_query-WORD[cCOLLECTION_None_WORD]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1` FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1` FROM (SELECT `col1` FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1` FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-SCALAR_query-COLLECTION[cCOLLECTION_SCALAR_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-SCALAR_query-None[cCOLLECTION_SCALAR_None]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-SCALAR_query-SCALAR[cCOLLECTION_SCALAR_SCALAR]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-SCALAR_query-WORD[cCOLLECTION_SCALAR_WORD]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-WORD_query-COLLECTION[cCOLLECTION_WORD_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-WORD_query-None[cCOLLECTION_WORD_None]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-WORD_query-SCALAR[cCOLLECTION_WORD_SCALAR]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-COLLECTION_columns-WORD_query-WORD[cCOLLECTION_WORD_WORD]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY col1",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `col1`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `col1` ORDER BY `col1`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-COLLECTION_query-COLLECTION[cSCALAR_COLLECTION_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY data3",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-COLLECTION_query-None[cSCALAR_COLLECTION_None]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY data3",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-COLLECTION_query-SCALAR[cSCALAR_COLLECTION_SCALAR]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-COLLECTION_query-WORD[cSCALAR_COLLECTION_WORD]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, `data3`, 'r0' AS resource_id FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, `data3`, 'r1' AS resource_id FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-None_query-COLLECTION[cSCALAR_None_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3` FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY data3",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3` FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-None_query-None[cSCALAR_None_None]
   tuple(
-    'SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` UNION ALL SELECT `data3` FROM `r1`) as innerq GROUP BY `data3` ORDER BY data3',
+    'SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` UNION ALL SELECT `data3` FROM `r1`) as innerq GROUP BY `data3` ORDER BY `data3`',
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-None_query-SCALAR[cSCALAR_None_SCALAR]
   tuple(
-    "SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3` FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3` FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-None_query-WORD[cSCALAR_None_WORD]
   tuple(
-    "SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3` FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3` FROM (SELECT `data3` FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3` FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-SCALAR_query-COLLECTION[cSCALAR_SCALAR_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY data3",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-SCALAR_query-None[cSCALAR_SCALAR_None]
   tuple(
-    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1`) as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1`) as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-SCALAR_query-SCALAR[cSCALAR_SCALAR_SCALAR]
   tuple(
-    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-SCALAR_query-WORD[cSCALAR_SCALAR_WORD]
   tuple(
-    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-WORD_query-COLLECTION[cSCALAR_WORD_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY data3",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-WORD_query-None[cSCALAR_WORD_None]
   tuple(
-    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1`) as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1`) as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-WORD_query-SCALAR[cSCALAR_WORD_SCALAR]
   tuple(
-    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-SCALAR_columns-WORD_query-WORD[cSCALAR_WORD_WORD]
   tuple(
-    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY data3",
+    "SELECT COUNT(*) AS total, `data3`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `data3` ORDER BY `data3`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-COLLECTION_query-COLLECTION[cWORD_COLLECTION_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY word",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-COLLECTION_query-None[cWORD_COLLECTION_None]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY word",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-COLLECTION_query-SCALAR[cWORD_COLLECTION_SCALAR]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data3` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-COLLECTION_query-WORD[cWORD_COLLECTION_WORD]
   tuple(
-    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "WITH col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'col1', col1)), ']') AS entry_data FROM (SELECT `col1`, 'r0' AS resource_id, `data1` AS word FROM `r0` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id WHERE `data1` = '1' UNION ALL SELECT `col1`, 'r1' AS resource_id, `data2` AS word FROM `r1` LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-None_query-COLLECTION[cWORD_None_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY word",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-None_query-None[cWORD_None_None]
   tuple(
-    'SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` UNION ALL SELECT `data2` AS word FROM `r1`) as innerq GROUP BY `word` ORDER BY word',
+    'SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` UNION ALL SELECT `data2` AS word FROM `r1`) as innerq GROUP BY `word` ORDER BY `word`',
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-None_query-SCALAR[cWORD_None_SCALAR]
   tuple(
-    "SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-None_query-WORD[cWORD_None_WORD]
   tuple(
-    "SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word` FROM (SELECT `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-SCALAR_query-COLLECTION[cWORD_SCALAR_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY word",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-SCALAR_query-None[cWORD_SCALAR_None]
   tuple(
-    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1`) as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1`) as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-SCALAR_query-SCALAR[cWORD_SCALAR_SCALAR]
   tuple(
-    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-SCALAR_query-WORD[cWORD_SCALAR_WORD]
   tuple(
-    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'data3', data3)), ']') AS entry_data FROM (SELECT `data3`, 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT `data3`, 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-WORD_query-COLLECTION[cWORD_WORD_COLLECTION]
   tuple(
-    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY word",
+    "WITH col1__where AS (SELECT `__parent_id` FROM `r0__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r0__col1` GROUP BY `__parent_id`), col1__where AS (SELECT `__parent_id` FROM `r1__col1` WHERE `value` = '1' GROUP BY `__parent_id`), col1__data AS (SELECT `__parent_id`, GROUP_CONCAT(value SEPARATOR '\x1f') AS col1 FROM `r1__col1` GROUP BY `__parent_id`) SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` JOIN `col1__where` ON `col1__where`.__parent_id = r0.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r0.__id UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1` JOIN `col1__where` ON `col1__where`.__parent_id = r1.__id LEFT JOIN `col1__data` ON `col1__data`.__parent_id = r1.__id) as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-WORD_query-None[cWORD_WORD_None]
   tuple(
-    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1`) as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1`) as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-WORD_query-SCALAR[cWORD_WORD_SCALAR]
   tuple(
-    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data3` = '1' UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data3` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
 # name: test_count_compile-WORD_columns-WORD_query-WORD[cWORD_WORD_WORD]
   tuple(
-    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY word",
+    "SELECT COUNT(*) AS total, `word`, CONCAT('[', GROUP_CONCAT(JSON_OBJECT('resource_id', resource_id, 'word', word)), ']') AS entry_data FROM (SELECT 'r0' AS resource_id, `data1` AS word FROM `r0` WHERE `data1` = '1' UNION ALL SELECT 'r1' AS resource_id, `data2` AS word FROM `r1` WHERE `data2` = '1') as innerq GROUP BY `word` ORDER BY `word`",
     None,
   )
 # ---
