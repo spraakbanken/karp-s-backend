@@ -21,7 +21,7 @@ class SQLQuery:
         self.inner_queries = queries
         return self
 
-    def join(self, field, alias=None, where: tuple[(str, str)] | None = None):
+    def join(self, field, alias=None, where: str | None = None):
         """
         field must be in a table with two columns, __parent_id and value
         a CTE and a join (LEFT or INNER, depending on if there is a query on <field>)
@@ -58,7 +58,7 @@ class SQLQuery:
                 + (
                     select([("__parent_id", None)])
                     .from_table(f"{self.table}__{join}")
-                    .where(f"`{where[0]}` {where[1]}")
+                    .where(where)
                     .group_by("__parent_id")
                     .to_string()[0]
                 )
@@ -147,7 +147,6 @@ class SQLQuery:
 
             # for certain queries we are working against derived tables
             if self.joins:
-
                 # for join in inner_q.joins:
                 #     qs = inner_q.get_ctes(join)
                 #     ctes.append((join, qs))

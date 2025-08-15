@@ -28,7 +28,7 @@ class SearchResult(BaseModel):
     total: int
 
 
-type Scalar = str | int | bool
+type Scalar = str | int | float | bool
 
 
 class CountResult(BaseModel):
