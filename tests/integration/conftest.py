@@ -25,7 +25,7 @@ class Backend:
         return ConfigResponse(**response.json())
 
     def search(self, resource_ids: list[str], q_str: str = "") -> SearchResult:
-        response = self.get(f"/search?resources={','.join(resource_ids)}&{q_str}")
+        response = self.get(f"/search?resources={','.join(resource_ids)}&{q_str.replace('+', '%2b')}")
         json_data = response.json()
         return SearchResult(**json_data)
 
@@ -37,7 +37,7 @@ class Backend:
         columns: str = "resource_id=partOfSpeech",
     ) -> CountResult:
         response = self.get(
-            f"/count?resources={','.join(resource_ids)}&{q_str}&compile={','.join(compile)}&columns={columns}"
+            f"/count?resources={','.join(resource_ids)}&{q_str}&compile={','.join(compile).replace('+', '%2b')}&columns={columns.replace('+', '%2b')}"
         )
         json_data = response.json()
         return CountResult(**json_data)
