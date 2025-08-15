@@ -1,3 +1,4 @@
+from karps.config import Field, MainConfig
 from karps.query.query import parse_query, get_query
 
 
@@ -11,6 +12,7 @@ def test_parse():
 
 def test_sql_query():
     ast = parse_query("equals|field|value")
-    field, op_arg = get_query("", ast)
+    dummy_config = MainConfig(tags={}, fields={"field": Field(name="field", type="str")})
+    field, op_arg = get_query(dummy_config, "", ast)
     assert field == "field"
-    assert op_arg == "= 'value'"
+    assert op_arg == "`field` = 'value'"

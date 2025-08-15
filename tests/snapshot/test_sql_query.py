@@ -1,4 +1,3 @@
-from tarfile import data_filter
 from karps.config import Field, MainConfig, MultiLang, ResourceConfig
 from karps.database.database import add_aggregation, get_search
 from karps.query.query import parse_query

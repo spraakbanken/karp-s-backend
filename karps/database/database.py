@@ -57,23 +57,23 @@ def get_search(
         sql_q = select(sel).from_table(resource_config.resource_id)
 
         # get sql where clause from query
-        where = get_query(resource_config.word, q)
+        where_field, where = get_query(main_config, resource_config.word, q)
 
         for field in resource_config.fields:
             # only join tables that are used in selection
             # TODO must also add joins that are used in queries
             if fields[field].collection:
                 where_kwarg = {}
-                if where and where[0] == field:
+                if where and where_field == field:
                     # add where clause to inner/cte/join-query, always called "value"
-                    where_kwarg = {"where": ("value", where[1])}
+                    where_kwarg = {"where": where}
                 if field in [s[0] for s in sel] or where_kwarg:
                     aliases = [alias for col, alias in sel if col == field]
                     sql_q.join(field, **where_kwarg, alias=aliases[0] if aliases else None)
 
-        if where and not fields[where[0]].collection:
+        if where and not fields[where_field].collection:
             # add where clause to outer query
-            sql_q.where(f"`{where[0]}` {where[1]}")
+            sql_q.where(where)
 
         res.append(sql_q)
     return res

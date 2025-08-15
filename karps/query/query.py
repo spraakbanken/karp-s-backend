@@ -3,6 +3,7 @@ import tatsu
 import tatsu.exceptions
 import importlib.resources
 
+from karps.config import MainConfig
 from karps.errors import errors
 
 with importlib.resources.files("karps.query").joinpath("query.ebnf").open() as fp:
@@ -38,7 +39,12 @@ def parse_query(q: str | None) -> Query | None:
         return None
 
 
-def get_query(word_column: str, q: Query | None) -> tuple[str, str] | None:
+def get_epsilon(q_number):
+    # for smaller floats we might need a smaller epsilon and vice versa for larger floats (magnitude, not precision)
+    # this is work-in-progress and not fully tested
+    return f"GREATEST(0.0001, 1e-7 * ABS({q_number}))"
+
+def get_query(main_config: MainConfig, word_column: str, q: Query | None) -> tuple[str | None, str | None]:
     """
     Translates a query tree into an SQL WHERE clause.
 
@@ -47,34 +53,53 @@ def get_query(word_column: str, q: Query | None) -> tuple[str, str] | None:
     :return: A string representing the SQL WHERE clause.
     """
     if not (q and q.field):
-        return None
+        return None, None
 
     # If the field is "word", use the specified word_column, as it can differ across resources.
     if q.field == "word":
         field = word_column
     else:
         field = q.field
+    field_type: str = main_config.fields[field].type
 
-    if q.op == "equals":
-        op_arg = f"= '{q.value}'"
-    elif q.op == "startswith":
-        op_arg = f"LIKE '{q.value}%'"
-    elif q.op == "endswith":
-        op_arg = f"LIKE '%{q.value}'"
-    elif q.op == "contains":
-        op_arg = f"LIKE '%{q.value}%'"
-    elif q.op == "regexp":
-        op_arg = f"REGEXP '{q.value}'"
-    # TODO test these with integers
-    elif q.op == "lt":
-        op_arg = f"< '{q.value}'"
-    elif q.op == "lte":
-        op_arg = f"<= '{q.value}'"
-    elif q.op == "gt":
-        op_arg = f"> '{q.value}'"
-    elif q.op == "gte":
-        op_arg = f">= '{q.value}'"
+    # collections are stored in sepearate tables where the column name is always value
+    db_field = "value" if main_config.fields[field].collection else field
+
+    if field_type == "float":
+        if q.op == "equals":
+            return field, f"ABS(`{field}` - {q.value}) < {get_epsilon(q.value)}"
+        elif q.op == "lt":
+            op_arg = f"< {q.value} + {get_epsilon(q.value)}"
+        elif q.op == "lte":
+            op_arg = f"<= {q.value} + {get_epsilon(q.value)}"
+        elif q.op == "gt":
+            op_arg = f"> {q.value} - {get_epsilon(q.value)}"
+        elif q.op == "gte":
+            op_arg = f">= {q.value} - {get_epsilon(q.value)}"
+        else:
+            raise errors.UserError("unsupported operator for numeric values")
+        return field, f"`{db_field}` {op_arg}"
     else:
-        # this should not happen since the query parser would not accept other operators
-        raise errors.InternalError("unknown operator in query")
-    return field, op_arg
+        if q.op == "equals":
+            op_arg = f"= '{q.value}'"
+        elif q.op == "startswith":
+            op_arg = f"LIKE '{q.value}%'"
+        elif q.op == "endswith":
+            op_arg = f"LIKE '%{q.value}'"
+        elif q.op == "contains":
+            op_arg = f"LIKE '%{q.value}%'"
+        elif q.op == "regexp":
+            op_arg = f"REGEXP '{q.value}'"
+        # TODO test these with integers
+        elif q.op == "lt":
+            op_arg = f"< '{q.value}'"
+        elif q.op == "lte":
+            op_arg = f"<= '{q.value}'"
+        elif q.op == "gt":
+            op_arg = f"> '{q.value}'"
+        elif q.op == "gte":
+            op_arg = f">= '{q.value}'"
+        else:
+            # this should not happen since the query parser would not accept other operators
+            raise errors.InternalError("unknown operator in query")
+    return field, f"`{db_field}` {op_arg}"
