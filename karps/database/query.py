@@ -175,7 +175,7 @@ class SQLQuery:
                 s += f" LIMIT {self.size} OFFSET {self._from}"
 
             if self._order_by:
-                s += f" ORDER BY {self._order_by}"
+                s += f" ORDER BY `{self._order_by}`"
 
             return s
 
