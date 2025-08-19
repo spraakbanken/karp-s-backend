@@ -42,7 +42,8 @@ def parse_query(q: str | None) -> Query | None:
 def get_epsilon(q_number):
     # for smaller floats we might need a smaller epsilon and vice versa for larger floats (magnitude, not precision)
     # this is work-in-progress and not fully tested
-    return f"GREATEST(0.0001, 1e-7 * ABS({q_number}))"
+    return 0.01
+
 
 def get_query(main_config: MainConfig, word_column: str, q: Query | None) -> tuple[str | None, str | None]:
     """
