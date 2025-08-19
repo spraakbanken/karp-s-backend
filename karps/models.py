@@ -16,16 +16,18 @@ class BaseModel(pydantic.BaseModel):
 class HitResponse(BaseModel):
     # entry can be anything
     entry: dict[str, object]
-
-
-class LexiconResult(BaseModel):
-    hits: list[HitResponse]
-    total: int
+    resource_id: str
 
 
 class SearchResult(BaseModel):
-    hits: dict[str, LexiconResult]
+    hits: list[HitResponse]
+    resource_hits: dict[str, int]
+    resource_order: list[str]
     total: int
+
+
+class UserErrorResult(BaseModel):
+    message: str
 
 
 type Scalar = str | int | float | bool

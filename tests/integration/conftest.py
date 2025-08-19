@@ -9,7 +9,7 @@ import uvicorn
 
 from karps.api import app
 from karps.config import ConfigResponse
-from karps.models import CountResult, SearchResult
+from karps.models import CountResult, SearchResult, UserErrorResult
 
 
 class Backend:
@@ -24,10 +24,24 @@ class Backend:
         response = self.get("/config")
         return ConfigResponse(**response.json())
 
-    def search(self, resource_ids: list[str], q_str: str = "") -> SearchResult:
-        response = self.get(f"/search?resources={','.join(resource_ids)}&{q_str.replace('+', '%2b')}")
+    def search(self, resource_ids: list[str], q_str: str = "", from_: int = 0) -> SearchResult:
+        res, _ = self.search_with_status(resource_ids, q_str, from_)
+        if isinstance(res, SearchResult):
+            return res
+        raise RuntimeError("Unexpected backend error")
+
+    def search_with_status(
+        self, resource_ids: list[str], q_str: str = "", from_: int = 0
+    ) -> tuple[SearchResult | UserErrorResult, int]:
+        url = f"/search?resources={','.join(resource_ids)}&{q_str.replace('+', '%2b')}"
+        if from_ > 0:
+            url += f"&from={from_}"
+        response = self.get(url)
         json_data = response.json()
-        return SearchResult(**json_data)
+        if response.status_code == 500:
+            return UserErrorResult(**json_data), 500
+        else:
+            return SearchResult(**json_data), response.status_code
 
     def count(
         self,
