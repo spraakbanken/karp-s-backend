@@ -2,8 +2,8 @@ from typing import Iterable, Sequence
 from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_collection_fields
 from karps.database.database import add_aggregation, run_paged_searches, run_searches, get_search
 from karps.database.query import SQLQuery
-from karps.errors.errors import InternalError
-from karps.models import HitResponse, LexiconResult, SearchResult
+from karps.errors.errors import InternalError, UserError
+from karps.models import HitResponse, SearchResult
 from karps.query.query import parse_query
 
 
@@ -15,25 +15,48 @@ def search(
     size: int = 10,
     _from: int = 0,
 ) -> SearchResult:
+    resources = sorted(resources, key=lambda r: r.resource_id)
     s: list[SQLQuery] = get_search(main_config, resources, parse_query(q))
 
-    results = zip(
-        resources,
-        run_paged_searches(
-            env, s, size=size, _from=_from, collection_fields=get_collection_fields(main_config, resources)
-        ),
+    results, count_results = run_paged_searches(
+        env, s, size=size, _from=_from, collection_fields=get_collection_fields(main_config, resources)
     )
 
     total = 0
-    lexicon_results = {}
-    for resource_config, (_, hits, lexicon_total) in results:
-        hits = [HitResponse(**{"entry": format_hit(main_config, resource_config, hit)}) for hit in hits]
+    all_hits = []
+    resource_hits = {}
+    resource_order = []
+    page_exists = _from == 0
+    for resource_config, resource_hit in zip(resources, results):
+        if resource_hit is None:
+            continue
+        page_exists = True
+        (_, hits) = resource_hit
+        hits = [
+            HitResponse(
+                **{
+                    "entry": format_hit(main_config, resource_config, hit),
+                    "resource_id": resource_config.resource_id,
+                }
+            )
+            for hit in hits
+        ]
+
+        all_hits.extend(hits)
+        if len(all_hits) > size:
+            break
+
+    if not page_exists:
+        raise UserError(f"Requested from does not exist, value: {_from}")
+
+    for resource_config, lexicon_total in zip(resources, count_results):
+        resource_order.append(resource_config.resource_id)
         if lexicon_total is None:
             raise InternalError("Count queries failed")
-        lexicon_results[resource_config.resource_id] = LexiconResult(hits=hits, total=lexicon_total)
+        resource_hits[resource_config.resource_id] = lexicon_total
         total += lexicon_total
 
-    return SearchResult(hits=lexicon_results, total=total)
+    return SearchResult(hits=all_hits, resource_hits=resource_hits, resource_order=resource_order, total=total)
 
 
 def count(

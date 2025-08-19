@@ -130,7 +130,8 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
 def run_searches(
     config: Env, sql_queries: Iterable[SQLQuery], collection_fields: Iterable = ()
 ) -> Iterator[tuple[list[str], list[list[Any]]]]:
-    for columns, result, _ in run_paged_searches(config, sql_queries, paged=False, collection_fields=collection_fields):
+    results, _ = run_paged_searches(config, sql_queries, paged=False, collection_fields=collection_fields)
+    for columns, result in results:
         yield columns, result
 
 
@@ -141,40 +142,78 @@ def run_paged_searches(
     _from: int = 0,
     paged=True,
     collection_fields: Iterable = (),
-) -> list[tuple[list[str], list[list[Any]], int | None]]:
-    if paged:
-        sql_queries = [s.from_page(_from).add_size(size).to_string(paged=True) for s in in_sql_queries]
-    else:
-        sql_queries = [s.to_string() for s in in_sql_queries]
-    res: list[tuple] = []
+) -> tuple[Iterable[tuple[list[str], list[list[Any]]] | None], list[int]]:
+    sql_queries = [s.to_string(paged=paged) for s in in_sql_queries]
+
+    # fetch the total counts for each resource/query
+    count_res: list[int] = []
     with get_cursor(config) as cursor:
-        for sql_query, count_query in sql_queries:
-            columns, result = fetchall(cursor, sql_query)
+        for _, count_query in sql_queries:
             if count_query:
                 _, count_result = fetchall(cursor, count_query)
-                total = count_result[0][0]
-            else:
-                total = None
+                count_res.append(count_result[0][0])
 
-            # TODO do this in lazily
-            new_result = []
-            for row in result:
-                new_row = []
-                for i, column in enumerate(columns):
-                    if column == "entry_data":
-                        entries_data = json.loads(str(row[i]))
-                        if collection_fields:
-                            for entry_data in entries_data:
-                                for json_field in collection_fields:
-                                    if json_field in entry_data:
-                                        entry_data[json_field] = (
-                                            entry_data[json_field].split("\u001f") if entry_data[json_field] else []
-                                        )
-                        new_row.append(entries_data)
-                    elif column in collection_fields:
-                        new_row.append(row[i].split("\u001f") if row[i] else [])
-                    else:
-                        new_row.append(row[i])
-                new_result.append(new_row)
-            res.append((columns, new_result, total))
-    return res
+    # if the query uses paging, be must add the limits from user supplied _from and size
+    # but also count_res, which contain the number of hits in each resource
+    sql_queries_updated = []
+    if paged:
+        row_count = 0
+        total_count = 0
+        query_from = _from
+        # use count_res to know which queries to execute
+        for count, in_sql_query in zip(count_res, in_sql_queries):
+            total_count += count
+            # the number of rows to get from this query is min of available rows or needed rows
+            query_size = min(total_count - query_from, size - row_count)
+            if query_size > 0:
+                if query_from != 0:
+                    # adapt query_from to current resource
+                    query_from = count - (total_count - query_from)
+                # I think from_page is an incorrect name and from_entry/row is correct
+                sql_queries_updated.append(
+                    in_sql_query.from_page(query_from).add_size(query_size).to_string(paged=True)
+                )
+                row_count += query_size
+                # only the first query ever need to have from != 0
+                query_from = 0
+            else:
+                # when found is size, we don't need to do more queries, append empty placeholder for now
+                sql_queries_updated.append(None)
+    else:
+        sql_queries_updated = sql_queries
+
+    def res():
+        # a generator to avoid fetching any data we do not need
+        for resource_query in sql_queries_updated:
+            if resource_query is None:
+                # yield empty placeholder
+                yield None
+            else:
+                sql_query = resource_query[0]
+                with get_cursor(config) as cursor:
+                    columns, result = fetchall(cursor, sql_query)
+                new_result = []
+                for row in result:
+                    new_row = []
+                    for i, column in enumerate(columns):
+                        if column == "entry_data":
+                            # for statistics, data shown but not used in compile are returned in a column
+                            # called "entry_data", in JSON format. in the JSON, list fields are represented as
+                            # \u001f separated values
+                            entries_data = json.loads(str(row[i]))
+                            if collection_fields:
+                                for entry_data in entries_data:
+                                    for json_field in collection_fields:
+                                        if json_field in entry_data:
+                                            entry_data[json_field] = (
+                                                entry_data[json_field].split("\u001f") if entry_data[json_field] else []
+                                            )
+                            new_row.append(entries_data)
+                        elif column in collection_fields:
+                            new_row.append(row[i].split("\u001f") if row[i] else [])
+                        else:
+                            new_row.append(row[i])
+                    new_result.append(new_row)
+                yield (columns, new_result)
+
+    return res(), count_res
