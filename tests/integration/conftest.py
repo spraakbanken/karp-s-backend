@@ -24,15 +24,16 @@ class Backend:
         response = self.get("/config")
         return ConfigResponse(**response.json())
 
-    def search(self, resource_ids: list[str], q_str: str = "", from_: int = 0) -> SearchResult:
-        res, _ = self.search_with_status(resource_ids, q_str, from_)
+    def search(self, resource_ids: list[str], q: str | None = None, from_: int = 0) -> SearchResult:
+        res, _ = self.search_with_status(resource_ids, q, from_)
         if isinstance(res, SearchResult):
             return res
         raise RuntimeError("Unexpected backend error")
 
     def search_with_status(
-        self, resource_ids: list[str], q_str: str = "", from_: int = 0
+        self, resource_ids: list[str], q: str | None = None, from_: int = 0
     ) -> tuple[SearchResult | UserErrorResult, int]:
+        q_str = f"&q={q}" if q else ""
         url = f"/search?resources={','.join(resource_ids)}&{q_str.replace('+', '%2b')}"
         if from_ > 0:
             url += f"&from={from_}"
@@ -46,10 +47,11 @@ class Backend:
     def count(
         self,
         resource_ids: list[str],
-        q_str: str = "",
+        q: str | None = None,
         compile: Iterable[str] = ("word",),
         columns: str = "resource_id=partOfSpeech",
     ) -> CountResult:
+        q_str = f"&q={q}" if q else ""
         response = self.get(
             f"/count?resources={','.join(resource_ids)}&{q_str}&compile={','.join(compile).replace('+', '%2b')}&columns={columns.replace('+', '%2b')}"
         )

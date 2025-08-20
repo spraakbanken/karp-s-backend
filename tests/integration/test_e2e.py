@@ -1,10 +1,10 @@
-from karps.models import SearchResult, UserErrorResult
 from tests.integration.conftest import Backend
 
 
 """
 These tests depend on ao, fulaord and kelly
 """
+
 
 def test_search(backend: Backend, snapshot):
     entries = backend.search(["ao"], "q=equals|word|eventuell")
