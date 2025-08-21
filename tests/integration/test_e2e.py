@@ -7,46 +7,46 @@ These tests depend on ao, fulaord and kelly
 
 
 def test_search(backend: Backend, snapshot):
-    entries = backend.search(["ao"], "q=equals|word|eventuell")
+    entries = backend.search(["ao"], q="equals|word|eventuell")
     assert entries == snapshot
 
 
 def test_search_with_from(backend: Backend, snapshot):
-    result = backend.search(["ao", "kelly"], "q=equals|partOfSpeech|nn")
+    result = backend.search(["ao", "kelly"], q="equals|partOfSpeech|nn")
     assert result == snapshot
 
 
 def test_search_three_resources(backend: Backend, snapshot):
     # should give one fulaord and 9 kelly
-    result = backend.search(["kelly", "ao", "fulaord"], "q=startswith|word|a", from_=577)
+    result = backend.search(["kelly", "ao", "fulaord"], q="startswith|word|a", from_=577)
     assert result == snapshot
 
 
 def test_search_three_resources2(backend: Backend, snapshot):
-    result = backend.search(["ao", "kelly", "fulaord"], "q=startswith|word|a")
+    result = backend.search(["ao", "kelly", "fulaord"], q="startswith|word|a")
     ao_count = result.resource_hits["ao"]
     kelly_count = result.resource_hits["kelly"]
-    result = backend.search(["kelly", "ao", "fulaord"], "q=startswith|word|a", from_=ao_count + kelly_count)
+    result = backend.search(["kelly", "ao", "fulaord"], q="startswith|word|a", from_=ao_count + kelly_count)
     assert result == snapshot
 
 
 def test_search_with_too_large_from(backend: Backend, snapshot):
-    result = backend.search(["ao", "kelly"], "q=equals|partOfSpeech|nn")
+    result = backend.search(["ao", "kelly"], q="equals|partOfSpeech|nn")
     ao_count = result.resource_hits["ao"]
     kelly_count = result.resource_hits["kelly"]
 
     result, status = backend.search_with_status(
-        ["ao", "kelly"], "q=equals|partOfSpeech|nn", from_=ao_count + kelly_count
+        ["ao", "kelly"], q="equals|partOfSpeech|nn", from_=ao_count + kelly_count
     )
     assert result, status == snapshot
 
 
 def test_zero_hits(backend: Backend, snapshot):
-    result, status = backend.search_with_status(["ao", "kelly"], "q=equals|partOfSpeech|ASDFGHJKL")
+    result, status = backend.search_with_status(["ao", "kelly"], q="equals|partOfSpeech|ASDFGHJKL")
     assert result, status == snapshot
 
 
 def test_count(backend: Backend, snapshot):
     resource_id = "ao"
-    entries = backend.count([resource_id], "q=equals|word|eventuell")
+    entries = backend.count([resource_id], q="equals|word|eventuell")
     assert entries == snapshot
