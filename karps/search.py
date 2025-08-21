@@ -68,6 +68,7 @@ def count(
     compile: Sequence[str] = (),
     columns: Iterable[tuple[str, str]] = (),
 ) -> tuple[list[str], list[list[object]]]:
+    compile = sorted(compile, key=alphanumeric_key)
     flattened_columns = [item for sublist in columns or () for item in sublist]
     selection = set(list(compile) + flattened_columns)
     ensure_fields_exist(resources, selection)
