@@ -34,7 +34,7 @@ type Scalar = str | int | float | bool
 
 
 class CountResult(BaseModel):
-    headers: list[str]
+    headers: list[dict[str, str]]
     table: list[list[Scalar | list[Scalar] | None]]
 
 
