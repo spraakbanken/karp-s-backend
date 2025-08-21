@@ -48,6 +48,11 @@ class Field(BaseModel):
             self.label = MultiLang(self.name)
 
 
+class EntryWord(BaseModel):
+    field: str
+    description: MultiLang
+
+
 class ResourceConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -55,8 +60,7 @@ class ResourceConfig(BaseModel):
     fields: list[str]
     label: MultiLang
     description: MultiLang | None = None
-    word: str
-    word_description: MultiLang
+    entry_word: EntryWord
     updated: int
     size: int
     link: str
@@ -133,7 +137,7 @@ def format_hit(
 def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
     for resource in resources:
         for field in fields:
-            if field not in ("resource_id", "word") and field not in resource.fields:
+            if field not in ("resource_id", "entry_word") and field not in resource.fields:
                 raise errors.UserError(f"{field} does not exist in {resource.resource_id}")
 
 
@@ -143,6 +147,4 @@ def get_collection_fields(main_config: MainConfig, resources: list[ResourceConfi
         for field in resource.fields:
             if main_config.fields[field].collection:
                 fields.add(field)
-        if main_config.fields[resource.word].collection:
-            fields.add("word")
     return fields

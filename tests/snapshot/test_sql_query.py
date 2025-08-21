@@ -1,4 +1,4 @@
-from karps.config import Field, MainConfig, MultiLang, ResourceConfig
+from karps.config import EntryWord, Field, MainConfig, MultiLang, ResourceConfig
 from karps.database.database import add_aggregation, get_search
 from karps.query.query import parse_query
 
@@ -22,14 +22,13 @@ main_config = MainConfig(
 
 
 def create_resource_config(idx):
-    """Create a ResourceConfig for testing where idx is both in name and "word" field"""
+    """Create a ResourceConfig for testing where idx is both in name and "entry_word" field"""
     data_field = f"data{idx + 1}"
     return ResourceConfig(
         resource_id=f"r{idx}",
         label=MultiLang("r"),
         fields=[data_field, "data3", "col1", "col2"],
-        word=data_field,
-        word_description=MultiLang(data_field),
+        entry_word=EntryWord(field=data_field, description=MultiLang(data_field)),
         updated=0,
         size=0,
         link="",
@@ -41,7 +40,7 @@ resource_configs = [create_resource_config(idx) for idx in range(0, 2)]
 # test configuration possibilities, querys, compiles and columns can be any of the three
 SCALAR = "SCALAR"
 COLLECTION = "COLLECTION"
-WORD = "WORD"
+ENTRY_WORD = "WORD"
 
 
 def create_search_query(query=None):
@@ -54,8 +53,8 @@ def create_search_queries(query=None, resource_configs=(), selection=None):
         q = parse_query("equals|col1|1")
     elif query == SCALAR:
         q = parse_query("equals|data3|1")
-    elif query == WORD:
-        q = parse_query("equals|word|1")
+    elif query == ENTRY_WORD:
+        q = parse_query("equals|entry_word|1")
     if selection:
         # count uses this
         return get_search(main_config, resource_configs, q, selection=selection)
@@ -65,8 +64,8 @@ def create_search_queries(query=None, resource_configs=(), selection=None):
 
 
 def create_count_query(compile_type=None, columns_type=None, query=None):
-    if compile_type is WORD:
-        compile = ["word"]
+    if compile_type is ENTRY_WORD:
+        compile = ["entry_word"]
     elif compile_type == SCALAR:
         compile = ["data3"]
     elif compile_type == COLLECTION:
@@ -79,8 +78,8 @@ def create_count_query(compile_type=None, columns_type=None, query=None):
         columns = [("resource_id", "data3")]
     elif columns_type == COLLECTION:
         columns = [("resource_id", "col1")]
-    elif columns_type == WORD:
-        columns = [("resource_id", "word")]
+    elif columns_type == ENTRY_WORD:
+        columns = [("resource_id", "entry_word")]
     else:
         raise RuntimeError("missing comulmns type given")
 
@@ -116,9 +115,9 @@ def make_test_count(compile_type, columns_type, query_type):
 
 
 # generate test-functions and add to the global namespace, so pytest can report multiple failures or syrupy update single snapshots
-for idx_compile, compile_type in enumerate([WORD, SCALAR, COLLECTION]):
-    for idx_columns, columns_type in enumerate([None, SCALAR, COLLECTION, WORD]):
-        for idx_query, query_type in enumerate([None, SCALAR, COLLECTION, WORD]):
+for idx_compile, compile_type in enumerate([ENTRY_WORD, SCALAR, COLLECTION]):
+    for idx_columns, columns_type in enumerate([None, SCALAR, COLLECTION, ENTRY_WORD]):
+        for idx_query, query_type in enumerate([None, SCALAR, COLLECTION, ENTRY_WORD]):
             # trying to name tests so we have a chance of figuring out which case went wrong
             globals()[f"test_count_compile-{compile_type}_columns-{columns_type}_query-{query_type}"] = make_test_count(
                 compile_type, columns_type, query_type

@@ -48,7 +48,7 @@ class Backend:
         self,
         resource_ids: list[str],
         q: str | None = None,
-        compile: Iterable[str] = ("word",),
+        compile: Iterable[str] = ("entry_word",),
         columns: str = "resource_id=partOfSpeech",
     ) -> CountResult:
         q_str = f"&q={q}" if q else ""
