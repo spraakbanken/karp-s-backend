@@ -5,6 +5,7 @@ from karps.database.query import SQLQuery
 from karps.errors.errors import InternalError, UserError
 from karps.models import HitResponse, SearchResult
 from karps.query.query import parse_query
+from karps.util import alphanumeric_key
 
 
 def search(
@@ -96,7 +97,7 @@ def count(
                     entry_headers.add(elem[col_name])
         result.append((tmp_row, entry_data, total))
 
-    entry_headers = sorted(entry_headers)
+    entry_headers = sorted(entry_headers, key=alphanumeric_key)
     # add the column headers for extra columns
     final_headers.extend(entry_headers)
     # add the column header for "total"
