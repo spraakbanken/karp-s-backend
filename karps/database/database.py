@@ -33,7 +33,7 @@ def get_search(
     selection_str: list[tuple[str, str | None]] | None = None
     if "*" not in selection:
         # don't send in resource_id here since it is not actually a column
-        selection_str = [(col, None) for col in selection if col not in ["resource_id", "word"]]
+        selection_str = [(col, None) for col in selection if col not in ["resource_id", "entry_word"]]
 
     def get_selection_str(
         resource_config, selection_str: list[tuple[str, str | None]] | None
@@ -47,8 +47,8 @@ def get_search(
             sel = list(selection_str)
         if "resource_id" in selection:
             sel.append((f"'{resource_config.resource_id}'", "resource_id"))
-        if "word" in selection:
-            sel.append((resource_config.word, "word"))
+        if "entry_word" in selection:
+            sel.append((resource_config.entry_word.field, "entry_word"))
         return sel
 
     res = []
@@ -57,7 +57,7 @@ def get_search(
         sql_q = select(sel).from_table(resource_config.resource_id)
 
         # get sql where clause from query
-        where_field, where = get_query(main_config, resource_config.word, q)
+        where_field, where = get_query(main_config, resource_config.entry_word.field, q)
 
         for field in resource_config.fields:
             # only join tables that are used in selection

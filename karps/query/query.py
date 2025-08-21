@@ -49,7 +49,7 @@ def get_query(main_config: MainConfig, word_column: str, q: Query | None) -> tup
     """
     Translates a query tree into an SQL WHERE clause.
 
-    :param word_column: The column name to use when the query field is "word"
+    :param word_column: The column name to use when the query field is "entry_word"
     :param q: The root of the query tree. If None, returns an empty string.
     :return: A string representing the SQL WHERE clause.
     """
@@ -57,7 +57,7 @@ def get_query(main_config: MainConfig, word_column: str, q: Query | None) -> tup
         return None, None
 
     # If the field is "word", use the specified word_column, as it can differ across resources.
-    if q.field == "word":
+    if q.field == "entry_word":
         field = word_column
     else:
         field = q.field
