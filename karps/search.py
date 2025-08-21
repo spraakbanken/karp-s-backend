@@ -81,7 +81,8 @@ def count(
     else:
         last_index = None
 
-    tmp_headers = headers[1:last_index]
+    # just the fields used in compile here
+    final_headers = headers[1:last_index]
     entry_headers = set()
 
     for row in res:
@@ -96,8 +97,10 @@ def count(
         result.append((tmp_row, entry_data, total))
 
     entry_headers = sorted(entry_headers)
-    tmp_headers.extend(entry_headers)
-    tmp_headers.append("total")
+    # add the column headers for extra columns
+    final_headers.extend(entry_headers)
+    # add the column header for "total"
+    final_headers.append("total")
     rows = []
     for tmp_row, entry_data, total in result:
         for entry_header in entry_headers:
@@ -105,4 +108,4 @@ def count(
         tmp_row.append(total)
         rows.append(tmp_row)
 
-    return tmp_headers, rows
+    return final_headers, rows
