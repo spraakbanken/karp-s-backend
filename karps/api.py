@@ -62,6 +62,10 @@ The total and values in compile will always be shown and does not need to be add
 """
 
 
+def normalize(elem):
+    return elem.replace("entryWord", "entry_word").replace("resourceId", "resource_id")
+
+
 def get_list_param(alias: str, title: str, description: str):
     """
     Used for comma-separated query parameters
@@ -72,7 +76,7 @@ def get_list_param(alias: str, title: str, description: str):
             alias=alias, title=title, description=description, min_length=1, pattern="^[^,]+(,[^,]+)*$"
         ),
     ) -> list[str]:
-        return list_str.split(",") if list_str else []
+        return normalize(list_str).split(",") if list_str else []
 
     return inner
 
@@ -92,7 +96,7 @@ def get_columns_param(name: str):
     ) -> list[tuple[str, str]]:
         if not columns:
             return []
-        return [twotuple(column_setting.split("=")) for column_setting in columns.split(",")]
+        return [twotuple(column_setting.split("=")) for column_setting in normalize(columns).split(",")]
 
     return inner
 
