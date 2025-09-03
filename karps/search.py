@@ -4,7 +4,7 @@ from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fie
 from karps.database.database import add_aggregation, run_paged_searches, run_searches, get_search
 from karps.database.query import SQLQuery
 from karps.errors.errors import InternalError, UserError
-from karps.models import HitResponse, SearchResult
+from karps.models import Header, HitResponse, SearchResult, ValueHeader
 from karps.query.query import parse_query
 from karps.util import alphanumeric_key
 
@@ -68,7 +68,7 @@ def count(
     q: str | None = None,
     compile: Sequence[str] = (),
     columns: Iterable[tuple[str, str]] = (),
-) -> tuple[list[dict[str, str]], list[list[object]]]:
+) -> tuple[list[Header], list[list[object]]]:
     compile = sorted(compile, key=alphanumeric_key)
     # sort columns by the "exploding" column
     columns = sorted(columns, key=lambda column: alphanumeric_key(column[0]))
@@ -87,7 +87,7 @@ def count(
         last_index = None
 
     # just the fields used in compile here
-    final_headers = [{"type": "compile", "field": header} for header in headers[1:last_index]]
+    final_headers = [Header(type="compile", column_field=header) for header in headers[1:last_index]]
     entry_headers = defaultdict(set)
     # for [col_name, col_val] in columns:
 
@@ -102,28 +102,26 @@ def count(
                     entry_headers[col_name, col_val].add(elem[col_name])
         result.append((tmp_row, entry_data, total))
 
-    entry_header2 = []
+    entry_header2: list[ValueHeader] = []
     for (explode_field, col_val), explode_values in entry_headers.items():
         for explode_value in explode_values:
             entry_header2.append(
-                {
-                    "type": "value",
-                    "header_value": explode_value,
-                    "header_field": explode_field,
-                    "column_field": col_val,
-                }
+                ValueHeader(type="value", header_value=explode_value, header_field=explode_field, column_field=col_val)
             )
 
+    def columns_key(x: ValueHeader):
+        if not x.column_field:
+            raise InternalError()
+        return alphanumeric_key(x.header_field), alphanumeric_key(x.column_field)
+
     # add the column headers for extra columns
-    final_headers.extend(
-        sorted(entry_header2, key=lambda x: (alphanumeric_key(x["header_field"]), alphanumeric_key(x["column_field"])))
-    )
+    final_headers.extend(sorted(entry_header2, key=columns_key))
     # add the column header for "total"
-    final_headers.append({"type": "total"})
+    final_headers.append(Header(type="total"))
     rows = []
     for tmp_row, entry_data, total in result:
         for entry_header in entry_header2:
-            tmp_row.append(entry_data.get(entry_header["header_value"]))
+            tmp_row.append(entry_data.get(entry_header.header_value))
         tmp_row.append(total)
         rows.append(tmp_row)
 
