@@ -33,6 +33,10 @@ serve: install-dev
 test:
 	PYTHONPATH=. pytest
 
+.PHONY: update-snapshots
+update-snapshots:
+	PYTHONPATH=. pytest --snapshot-update
+
 .PHONY: fmt
 fmt:
 	ruff format .

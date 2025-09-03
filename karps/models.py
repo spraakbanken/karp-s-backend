@@ -33,8 +33,18 @@ class UserErrorResult(BaseModel):
 type Scalar = str | int | float | bool
 
 
+class Header(BaseModel):
+    type: str  # can be value, total or compile
+    column_field: str | None = None  # when type=value
+
+
+class ValueHeader(Header):
+    header_field: str  # when type=value or total
+    header_value: str  # when header_field is available
+
+
 class CountResult(BaseModel):
-    headers: list[dict[str, str]]
+    headers: list[Header | ValueHeader]
     table: list[list[Scalar | list[Scalar] | None]]
 
 
