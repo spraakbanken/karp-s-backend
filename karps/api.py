@@ -140,7 +140,7 @@ def do_search(
     return search(env, main_config, resource_configs, q=q, size=size, _from=_from)
 
 
-@app.get("/count", summary="Count", responses=default_500)
+@app.get("/count", summary="Count", response_model_exclude_none=True, responses=default_500)
 def do_count(
     resources: list[str] = Depends(get_resources_param()),
     q: str | None = get_q_param(),
