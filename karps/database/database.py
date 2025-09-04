@@ -71,7 +71,7 @@ def get_search(
                     aliases = [alias for col, alias in sel if col == field]
                     sql_q.join(field, **where_kwarg, alias=aliases[0] if aliases else None)
 
-        if where and not fields[where_field].collection:
+        if where and where_field and not fields[where_field].collection:
             # add where clause to outer query
             sql_q.where(where)
 
