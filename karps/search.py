@@ -89,7 +89,6 @@ def count(
     # just the fields used in compile here
     final_headers = [Header(type="compile", column_field=header) for header in headers[1:last_index]]
     entry_headers = defaultdict(set)
-    # for [col_name, col_val] in columns:
 
     for row in res:
         total = row[0]
