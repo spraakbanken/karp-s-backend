@@ -164,7 +164,7 @@ def run_paged_searches(
         for count, in_sql_query in zip(count_res, in_sql_queries):
             total_count += count
             # the number of rows to get from this query is min of available rows or needed rows
-            query_size = min(total_count - query_from, size - row_count)
+            query_size = min(total_count - query_from, count, max(0, size - row_count))
             if query_size > 0:
                 if query_from != 0:
                     # adapt query_from to current resource
@@ -174,7 +174,7 @@ def run_paged_searches(
                     in_sql_query.from_page(query_from).add_size(query_size).to_string(paged=True)
                 )
                 row_count += query_size
-                # only the first query ever need to have from != 0
+                # only the first executed query need to have from != 0
                 query_from = 0
             else:
                 # when found is size, we don't need to do more queries, append empty placeholder for now
