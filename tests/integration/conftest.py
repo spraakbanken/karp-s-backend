@@ -49,7 +49,7 @@ class Backend:
         resource_ids: list[str],
         q: str | None = None,
         compile: Iterable[str] = ("entry_word",),
-        columns: str = "resource_id=partOfSpeech",
+        columns: str = "resource_id=ud_pos",
     ) -> CountResult:
         q_str = f"&q={q}" if q else ""
         response = self.get(
