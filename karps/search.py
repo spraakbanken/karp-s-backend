@@ -17,7 +17,7 @@ def search(
     size: int = 10,
     _from: int = 0,
 ) -> SearchResult:
-    resources = sorted(resources, key=lambda r: r.resource_id)
+    resources = sorted(resources, key=lambda r: alphanumeric_key(r.resource_id))
     s: list[SQLQuery] = get_search(main_config, resources, parse_query(q))
 
     results, count_results = run_paged_searches(
@@ -111,7 +111,7 @@ def count(
     def columns_key(x: ValueHeader):
         if not x.column_field:
             raise InternalError()
-        return alphanumeric_key(x.header_field), alphanumeric_key(x.column_field)
+        return alphanumeric_key(x.header_field), alphanumeric_key(x.column_field), alphanumeric_key(x.header_value)
 
     # add the column headers for extra columns
     final_headers.extend(sorted(entry_header2, key=columns_key))
