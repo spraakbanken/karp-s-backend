@@ -128,7 +128,7 @@ def add_aggregation(queries: list[SQLQuery], compile: Sequence[str], columns: li
         )
 
     s = select(sel).from_inner_query(queries)
-    s.group_by(", ".join(compile))
+    s.group_by(compile)
     # TODO add sort by *all* the compile parameters
     s.order_by(compile[0])
     return s

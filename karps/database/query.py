@@ -1,3 +1,6 @@
+from typing import Sequence
+
+
 class SQLQuery:
     def __init__(self, selection: list[tuple[str, str]]):
         # tuple pair represents value (1) AS alias (2)
@@ -29,8 +32,8 @@ class SQLQuery:
         self.joins[field] = (alias, where)
         return self
 
-    def group_by(self, field):
-        self._group_by = field
+    def group_by(self, fields: Sequence[str]):
+        self._group_by = ", ".join([f"`{field}`" for field in fields])
         return self
 
     def order_by(self, sort):
@@ -59,7 +62,7 @@ class SQLQuery:
                     select([("__parent_id", None)])
                     .from_table(f"{self.table}__{join}")
                     .where(where)
-                    .group_by("__parent_id")
+                    .group_by(["__parent_id"])
                     .to_string()[0]
                 )
                 + ")"
@@ -70,7 +73,7 @@ class SQLQuery:
             + (
                 select([("__parent_id", None), ("GROUP_CONCAT(value SEPARATOR '\u001f')", self.joins[join][0] or join)])
                 .from_table(f"{self.table}__{join}")
-                .group_by("__parent_id")
+                .group_by(["__parent_id"])
                 .to_string()[0]
             )
             + ")"
@@ -167,7 +170,7 @@ class SQLQuery:
                 s += f" WHERE {self.clause}"
 
             if self._group_by:
-                s += f" GROUP BY `{self._group_by}`"
+                s += f" GROUP BY {self._group_by}"
 
             # count queries and inner queries should not have size limits
             if not count and top_level and self.size is not None:
