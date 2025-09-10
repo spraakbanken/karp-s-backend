@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from karps.config import Env, ConfigResponse, get_env, get_resource_config, get_resource_configs, load_config
+from karps.logging import setup_sql_logger
 from karps.search import count, search
 from karps.models import CountResult, SearchResult, UserErrorSchema
 from karps.errors import errors
@@ -43,6 +44,8 @@ async def unicorn_exception_handler(request: Request, exc: errors.UserError):
 
 
 env: Env = get_env()
+if env.sql_query_logging:
+    setup_sql_logger(env.logging_dir)
 
 
 compile_param_description = """
