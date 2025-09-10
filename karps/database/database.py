@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 import json
-
+import sys
 from typing import Any, Iterable, Iterator, Sequence, cast
 import mysql.connector
 from mysql.connector.abstracts import MySQLConnectionAbstract
@@ -8,6 +8,7 @@ from mysql.connector.cursor import MySQLCursor
 from mysql.connector.pooling import PooledMySQLConnection
 
 from karps.config import Env, MainConfig, ResourceConfig
+from karps.logging import get_sql_logger
 from karps.query.query import Query, get_query
 from karps.database.query import SQLQuery, select
 
@@ -19,6 +20,33 @@ def get_connection(config: Env) -> PooledMySQLConnection | MySQLConnectionAbstra
         password=config.password,
         database=config.database,
     )
+
+
+sql_logger = get_sql_logger()
+
+
+@contextmanager
+def get_cursor(config: Env) -> Iterator[MySQLCursor]:
+    connection = get_connection(config)
+    cursor = None
+    try:
+        # When connection.cursor is called without arguments, a MySQLCursor-instance is returned
+        #   Explicitly casting improloggves type hints from cursor-methods such as fetchall
+        cursor = cast(MySQLCursor, connection.cursor())
+        yield cursor
+    finally:
+        if cursor:
+            cursor.close()
+        connection.close()
+
+
+def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
+    try:
+        cursor.execute(sql)
+    finally:
+        sql_logger.info(sql, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]
+    columns = [desc[0] for desc in cursor.description or ()]
+    return columns, cursor.fetchall()
 
 
 def get_search(
@@ -104,27 +132,6 @@ def add_aggregation(queries: list[SQLQuery], compile: Sequence[str], columns: li
     # TODO add sort by *all* the compile parameters
     s.order_by(compile[0])
     return s
-
-
-@contextmanager
-def get_cursor(config: Env) -> Iterator[MySQLCursor]:
-    connection = get_connection(config)
-    cursor = None
-    try:
-        # When connection.cursor is called without arguments, a MySQLCursor-instance is returned
-        #   Explicitly casting improves type hints from cursor-methods such as fetchall
-        cursor = cast(MySQLCursor, connection.cursor())
-        yield cursor
-    finally:
-        if cursor:
-            cursor.close()
-        connection.close()
-
-
-def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
-    cursor.execute(sql)
-    columns = [desc[0] for desc in cursor.description or ()]
-    return columns, cursor.fetchall()
 
 
 def run_searches(

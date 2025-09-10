@@ -19,6 +19,8 @@ class Env:
     password: str
     database: str
     base_path: str = ""
+    logging_dir: str = ""
+    sql_query_logging: bool = False
 
 
 def get_env() -> Env:
@@ -31,6 +33,8 @@ def get_env() -> Env:
         password=env.str("DB_PASSWORD"),
         database=env.str("DB_DATABASE"),
         base_path=env.str("BASE_PATH", ""),
+        logging_dir=env.str("LOGGING_DIR", ""),
+        sql_query_logging=env.bool("SQL_QUERY_LOGGING", False),
     )
 
 
