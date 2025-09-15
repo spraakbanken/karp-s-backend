@@ -88,7 +88,7 @@ def create_count_query(compile_type=None, columns_type=None, query=None):
     selection = set(list(compile) + flattened_columns)
 
     queries = create_search_queries(query, resource_configs=resource_configs, selection=sorted(list(selection)))
-    return add_aggregation(queries=queries, compile=compile, columns=flattened_columns).to_string()
+    return add_aggregation(queries=queries, compile=compile, columns=flattened_columns, sort=()).to_string()
 
 
 def test_search1(snapshot):

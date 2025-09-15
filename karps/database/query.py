@@ -172,12 +172,19 @@ class SQLQuery:
             if self._group_by:
                 s += f" GROUP BY {self._group_by}"
 
+            if self._order_by:
+                s += " ORDER BY "
+                order_bys = []
+                for field, order in self._order_by:
+                    order_s = f"`{field}`"
+                    if order != "asc":
+                        order_s += f" {order.upper()}"
+                    order_bys.append(order_s)
+                s += ", ".join(order_bys)
+
             # count queries and inner queries should not have size limits
             if not count and top_level and self.size is not None:
                 s += f" LIMIT {self.size} OFFSET {self._from}"
-
-            if self._order_by:
-                s += f" ORDER BY `{self._order_by}`"
 
             return s
 

@@ -31,12 +31,14 @@ class Backend:
         raise RuntimeError("Unexpected backend error")
 
     def search_with_status(
-        self, resource_ids: list[str], q: str | None = None, from_: int = 0
+        self, resource_ids: list[str], q: str | None = None, from_: int = 0, sort: str | None = None
     ) -> tuple[SearchResult | UserErrorResult, int]:
         q_str = f"&q={q}" if q else ""
         url = f"/search?resources={','.join(resource_ids)}&{q_str.replace('+', '%2b')}"
         if from_ > 0:
             url += f"&from={from_}"
+        if sort:
+            url += f"&sort={sort}"
         response = self.get(url)
         json_data = response.json()
         if response.status_code == 500:
