@@ -8,6 +8,7 @@ from mysql.connector.cursor import MySQLCursor
 from mysql.connector.pooling import PooledMySQLConnection
 
 from karps.config import Env, MainConfig, ResourceConfig
+from karps.errors.errors import UserError
 from karps.logging import get_sql_logger
 from karps.query.query import Query, get_query
 from karps.database.query import SQLQuery, select
@@ -49,8 +50,21 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
     return columns, cursor.fetchall()
 
 
+def _check_sort_allowed(resource_config, sort):
+    """
+    Raise if any field name used in sort is not available in the given resource
+    """
+    for field, _ in sort:
+        if field not in resource_config.fields:
+            raise UserError(f'Sort by "{field}" is not supported in "{resource_config.resource_id}"')
+
+
 def get_search(
-    main_config: MainConfig, resources: list[ResourceConfig], q: Query | None, selection: Iterable[str] = ("*")
+    main_config: MainConfig,
+    resources: list[ResourceConfig],
+    q: Query | None,
+    selection: Iterable[str] = ("*"),
+    sort: Sequence[tuple[str, str]] = (),
 ) -> list[SQLQuery]:
     """
     For each resource, creates a select statement with a where clause with constraints from q
@@ -102,12 +116,22 @@ def get_search(
         if where and where_field and not fields[where_field].collection:
             # add where clause to outer query
             sql_q.where(where)
-
+        if sort:
+            if sort[0][0] == "_default":
+                order = sort[0][1]
+                # use the resource's default field
+                sql_q.order_by([(resource_config.entry_word.field, order)])
+            else:
+                # check that the sort fields are available in resource
+                _check_sort_allowed(resource_config, sort)
+                sql_q.order_by(sort)
         res.append(sql_q)
     return res
 
 
-def add_aggregation(queries: list[SQLQuery], compile: Sequence[str], columns: list[str]) -> SQLQuery:
+def add_aggregation(
+    queries: list[SQLQuery], compile: Sequence[str], columns: list[str], sort: Sequence[tuple[str, str]]
+) -> SQLQuery:
     """
     Takes a string containing an list of SQL queries and does aggregations on
     the fields given in columns
@@ -129,8 +153,16 @@ def add_aggregation(queries: list[SQLQuery], compile: Sequence[str], columns: li
 
     s = select(sel).from_inner_query(queries)
     s.group_by(compile)
-    # TODO add sort by *all* the compile parameters
-    s.order_by(compile[0])
+
+    if not sort or sort[0][0] == "_default":
+        order = sort[0][1] if sort else "asc"
+        sorts = [(field, order) for field in compile]
+        s.order_by(sorts)
+    else:
+        for field, _ in sort:
+            if field not in compile:
+                raise UserError(f'Sort by "{field}" is not supported in with compile: {", ".join(compile)}')
+        s.order_by(sort)
     return s
 
 

@@ -12,11 +12,35 @@ from karps.errors import errors
 api_description = """
 Språkbanken has many lexical resources, listed on our [webpage](https://spraakbanken.gu.se/resurser/lexicon).
 
-This API makes it possible to search in the resources, read the entries, and also to get statistical information. For example:
-- what are the different senses of word \\<X\\> in \\<lexicon\\>?
-- how many (and which) of the resources has an entry with baseform "bord"?
-- what is the frequency distribution of part-of-speech tags in \\<lexicon\\>?
+This API makes it possible to search the resources, read the entries, and also to get statistical information. For example:
+- What are the different senses of word \\<X\\> in \\<lexicon\\>?
+- How many (and which) of the resources have an entry with baseform "bord"?
+- What is the frequency distribution of part-of-speech tags in \\<lexicon\\>?
+
+## The basics
+
+A **resource** is a collection of **entries** with the same fields (or schema). Every entry
+has a default field - `entryWord` - which is usually something like a lemma.
+
+## Sorting the results
+
+Ascending and descending sort are available. The sorting uses Swedish (POSIX `sv_SE` or MariaDB `utf8mb4_swedish_ci`) collation for text fields. It is also possible to 
+sort by fields of other types. Sorting is done using the `sort` parameter with the following grammar:
+```ebnf
+sort          ::= order | multi_fields ;
+order         ::= "asc" | "desc" ;
+multi_fields  ::= field_sort ( "," field_sort )* ;
+field_sort    ::= field_name "|" order ;
+```
+`field_name` is not defined in the grammar, see each API-call for more information about available fields.
+
+Examples: `sort=desc`, `sort=entryWord,pos|desc,nativePos|desc`
+
+The default value is `asc`. Only selecting an order uses the default field(s). See the respective search commands for defaults.
+
+When sorting by multiple fields, the sort will be applied in the given order. `asc` is always used when order is emitted.
 """
+
 
 app = FastAPI(
     title="Karp-S API",
@@ -64,9 +88,45 @@ It is mostly useful for smaller value sets. Selecting all entries, compiling on 
 The total and values in compile will always be shown and does not need to be added here.
 """
 
+sort_param_description = """
+See [Sorting the results](#section/Sorting-the-results) and API call description for more information.
+"""
+
 
 def normalize(elem):
     return elem.replace("entryWord", "entry_word").replace("resourceId", "resource_id")
+
+
+def get_sort_param():
+    """
+    Used for the sort parameter, if "asc" or "desc", add field "_default
+    """
+
+    def inner(
+        sort: str = Query("asc", description=sort_param_description),
+    ) -> list[tuple[str, str]]:
+        if sort in ["asc", "desc"]:
+            # if only asc/desc and given, it might modifiy the default sort order
+            return [("_default", sort)]
+        sorts = []
+        for elem in sort.split(","):
+            parts = elem.split("|")
+            if len(parts) == 2:
+                field, sort_order = parts
+                if sort_order in ["asc", "desc"]:
+                    sorts.append((field, sort_order))
+                else:
+                    raise errors.UserError(f"Unsupported sort order: {sort_order}")
+            else:
+                # default sort order for given fields is asc
+                if not parts[0]:
+                    field = "_default"
+                else:
+                    field = parts[0]
+                sorts.append((field, "asc"))
+        return sorts
+
+    return inner
 
 
 def get_list_param(alias: str, title: str, description: str):
@@ -134,13 +194,19 @@ def do_search(
     q: str | None = get_q_param(),
     size: int = 10,
     _from: int = Query(0, alias="from"),
+    sort: list[tuple[str, str]] = Depends(get_sort_param()),
 ) -> SearchResult:
     """
     From each provided resource, return the entries that match the query q.
+
+    ### Sorting
+    Sorting is supported on fields that are present in all selected resources. The default field is `entryWord` (**ascending** order).
+
+    The sort is done within each resource, the results from each resource are not mixed.
     """
     main_config = load_config(env)
     resource_configs = [get_resource_config(env, resource) for resource in resources]
-    return search(env, main_config, resource_configs, q=q, size=size, _from=_from)
+    return search(env, main_config, resource_configs, q=q, size=size, _from=_from, sort=sort)
 
 
 @app.get("/count", summary="Count", response_model_exclude_none=True, responses=default_500)
@@ -151,16 +217,22 @@ def do_count(
         get_list_param(alias="compile", title="Compile on", description=compile_param_description)
     ),
     columns: list[tuple[str, str]] = Depends(get_columns_param("columns")),
+    sort: list[tuple[str, str]] = Depends(get_sort_param()),
 ) -> CountResult:
     """
     From each provided resource, get the entries that match the query q. See http://ws.spraakbanken.gu.se/ws/karp/v7 for a description of the query language.
 
-    Compiled the matching entries on the fields in compile.
+    Compile the matching entries on the fields in compile.
 
     Each column given in columns will be added to the result.
+
+    ### Sorting
+
+    Sorting is supported for fields that are used in `compile`. The default fields are all the fields in `compile`
+    (**ascending** order) (they themselves sorted alphabetically, just like the columns).
     """
     main_config = load_config(env)
     resource_configs = [get_resource_config(env, resource) for resource in resources]
-    headers, table = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns)
+    headers, table = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns, sort=sort)
     res = CountResult.model_validate({"headers": headers, "table": table})
     return res

@@ -16,9 +16,10 @@ def search(
     q: str | None = None,
     size: int = 10,
     _from: int = 0,
+    sort: Sequence[tuple[str, str]] = (),
 ) -> SearchResult:
     resources = sorted(resources, key=lambda r: alphanumeric_key(r.resource_id))
-    s: list[SQLQuery] = get_search(main_config, resources, parse_query(q))
+    s: list[SQLQuery] = get_search(main_config, resources, parse_query(q), sort=sort)
 
     results, count_results = run_paged_searches(
         env, s, size=size, _from=_from, collection_fields=get_collection_fields(main_config, resources)
@@ -68,6 +69,7 @@ def count(
     q: str | None = None,
     compile: Sequence[str] = (),
     columns: Iterable[tuple[str, str]] = (),
+    sort: Sequence[tuple[str, str]] = (),
 ) -> tuple[list[Header], list[list[object]]]:
     compile = sorted(compile, key=alphanumeric_key)
     # sort columns by the "exploding" column
@@ -75,8 +77,8 @@ def count(
     flattened_columns = [item for sublist in columns or () for item in sublist]
     selection = set(list(compile) + flattened_columns)
     ensure_fields_exist(resources, selection)
-    s = get_search(main_config, resources, parse_query(q), selection=selection)
-    agg_s = add_aggregation(s, compile=compile, columns=flattened_columns)
+    s = get_search(main_config, resources, parse_query(q), selection=selection, sort=[])
+    agg_s = add_aggregation(s, compile=compile, columns=flattened_columns, sort=sort)
 
     result = []
     headers, res = next(run_searches(env, [agg_s], collection_fields=get_collection_fields(main_config, resources)))
