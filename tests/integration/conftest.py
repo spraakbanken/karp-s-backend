@@ -32,7 +32,7 @@ class Backend:
 
     def search_with_status(
         self, resource_ids: list[str], q: str | None = None, from_: int = 0, sort: str | None = None
-    ) -> tuple[SearchResult | UserErrorResult, int]:
+    ) -> tuple[SearchResult | UserErrorResult | None, int]:
         q_str = f"&q={q}" if q else ""
         url = f"/search?resources={','.join(resource_ids)}&{q_str.replace('+', '%2b')}"
         if from_ > 0:
@@ -40,11 +40,15 @@ class Backend:
         if sort:
             url += f"&sort={sort}"
         response = self.get(url)
-        json_data = response.json()
-        if response.status_code == 500:
-            return UserErrorResult(**json_data), 500
-        else:
-            return SearchResult(**json_data), response.status_code
+        try:
+            json_data = response.json()
+            if response.status_code == 500:
+                return UserErrorResult(**json_data), 500
+            else:
+                return SearchResult(**json_data), response.status_code
+        except Exception:
+            # Unknown error, indicates coding error
+            return None, response.status_code
 
     def count(
         self,
