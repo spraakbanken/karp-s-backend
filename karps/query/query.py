@@ -66,7 +66,7 @@ def get_query(main_config: MainConfig, word_column: str, q: Query | None) -> tup
     # collections are stored in sepearate tables where the column name is always value
     db_field = "value" if main_config.fields[field].collection else field
 
-    if field_type == "float":
+    if field_type == "float" or field_type == "integer":
         if q.op == "equals":
             return field, f"ABS(`{field}` - {q.value}) < {get_epsilon(q.value)}"
         elif q.op == "lt":
