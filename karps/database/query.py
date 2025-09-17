@@ -172,7 +172,7 @@ class SQLQuery:
             if self._group_by:
                 s += f" GROUP BY {self._group_by}"
 
-            if self._order_by:
+            if not count and self._order_by:
                 s += " ORDER BY "
                 order_bys = []
                 for field, order in self._order_by:
