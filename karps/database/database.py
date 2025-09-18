@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import json
 import sys
+import time
 from typing import Any, Iterable, Iterator, Sequence, cast
 import mysql.connector
 from mysql.connector.abstracts import MySQLConnectionAbstract
@@ -42,10 +43,12 @@ def get_cursor(config: Env) -> Iterator[MySQLCursor]:
 
 
 def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
+    bf = time.time()
     try:
         cursor.execute(sql)
     finally:
-        sql_logger.info(sql, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]
+        af = time.time()
+        sql_logger.info("", {"q": sql, "took": af - bf}, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]
     columns = [desc[0] for desc in cursor.description or ()]
     return columns, cursor.fetchall()
 
