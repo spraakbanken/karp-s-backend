@@ -1,4 +1,3 @@
-import pytest
 from tests.integration.conftest import Backend
 
 
@@ -12,9 +11,8 @@ def test_search(backend: Backend, snapshot):
     assert entries == snapshot
 
 
-@pytest.mark.skip(reason="partOfSpeech removed from ao")
 def test_search_with_from(backend: Backend, snapshot):
-    result = backend.search(["ao", "kelly"], q="equals|partOfSpeech|nn")
+    result = backend.search(["ao", "kelly"], q="equals|ud_pos|NOUN")
     assert result == snapshot
 
 
@@ -32,21 +30,17 @@ def test_search_three_resources2(backend: Backend, snapshot):
     assert result == snapshot
 
 
-@pytest.mark.skip(reason="partOfSpeech removed from ao")
 def test_search_with_too_large_from(backend: Backend, snapshot):
-    result = backend.search(["ao", "kelly"], q="equals|partOfSpeech|nn")
+    result = backend.search(["ao", "kelly"], q="equals|ud_pos|NOUN")
     ao_count = result.resource_hits["ao"]
     kelly_count = result.resource_hits["kelly"]
 
-    result, status = backend.search_with_status(
-        ["ao", "kelly"], q="equals|partOfSpeech|nn", from_=ao_count + kelly_count
-    )
+    result, status = backend.search_with_status(["ao", "kelly"], q="equals|ud_pos|NOUN", from_=ao_count + kelly_count)
     assert result, status == snapshot
 
 
-@pytest.mark.skip(reason="partOfSpeech removed from ao")
 def test_zero_hits(backend: Backend, snapshot):
-    result, status = backend.search_with_status(["ao", "kelly"], q="equals|partOfSpeech|ASDFGHJKL")
+    result, status = backend.search_with_status(["ao", "kelly"], q="equals|ud_pos|ASDFGHJKL")
     assert result, status == snapshot
 
 
