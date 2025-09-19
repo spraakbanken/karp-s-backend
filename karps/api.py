@@ -79,13 +79,19 @@ resources_param_description = """
 A comma-separated list of resource ID:s, for example `saldo`
 """
 columns_param_description = """
-Used for comma-separated values of and =-separated parameters like `field1=val_field1,field2=val_field2`
-- left-hand side of `=` the values in the field will create one column each
-- right-hand side of `=` is the value to be shown in the cell, for example part-of-speech.
+Add extra data columns to the result. For example: `field1=val_field1,field2=val_field2`
 
-It is mostly useful for smaller value sets. Selecting all entries, compiling on part-of-speech and showing baseform will create a weird table, the opposite will not.
+The left-hand side of `=` denotes  a field that will be used to create columns. Good examples
+are `resourceId` and `ud_pos`. For each unique value in the result, a column will be created 
+and the field in the right-hand side of `=` 
+will be used for values in the cells of that column. If there are multiple values for the right-hand side field they
+will be shown as a list.
 
-The total and values in compile will always be shown and does not need to be added here.
+It is possible to replace the field of the right-hand side with the keyword `_count` - `columns=resourceId=_count`.
+The is the default value if `columns` is omitted. With this, the number of
+hits per unique value of the selected field will be shown.
+
+The total number of rows and columns from `compile` will always be shown regardless of the value of `columns`.
 """
 
 sort_param_description = """
@@ -224,7 +230,7 @@ def do_count(
 
     Compile the matching entries on the fields in compile.
 
-    Each column given in columns will be added to the result.
+    Add additional data requested by using the `columns` parameter.
 
     ### Sorting
 
@@ -234,5 +240,5 @@ def do_count(
     main_config = load_config(env)
     resource_configs = [get_resource_config(env, resource) for resource in resources]
     headers, table = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns, sort=sort)
-    res = CountResult.model_validate({"headers": headers, "table": table})
+    res = CountResult.model_construct(**{"headers": headers, "table": table})
     return res
