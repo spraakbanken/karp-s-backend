@@ -74,7 +74,7 @@ def count(
     compile = sorted(compile, key=alphanumeric_key)
     # sort columns by the "exploding" column
     columns = sorted(columns, key=lambda column: alphanumeric_key(column[0]))
-    flattened_columns = list(set([item for sublist in columns or () for item in sublist]))
+    flattened_columns = list(set([item for sublist in columns or () for item in sublist if item != "_count"]))
     selection = compile + flattened_columns
     ensure_fields_exist(resources, selection)
     s = get_search(main_config, resources, parse_query(q), selection=selection, sort=[])
@@ -95,25 +95,39 @@ def count(
     for row in res:
         total = row[0]
         tmp_row = list(row[1:last_index])
-        entry_data = defaultdict(set)
+        entry_data = {}
         if flattened_columns:
             for elem in row[-1]:
                 for [col_name, col_val] in columns:
-                    entry_data[col_name, col_val, elem[col_name]].add(elem[col_val])
+                    column_identifier = (col_name, col_val, elem[col_name])
+                    if col_val != "_count":
+                        if column_identifier not in entry_data:
+                            entry_data[column_identifier] = set()
+                        entry_data[column_identifier].add(elem[col_val])
+                    else:
+                        if column_identifier not in entry_data:
+                            entry_data[column_identifier] = 0
+                        entry_data[column_identifier] += 1
                     entry_headers[col_name, col_val].add(elem[col_name])
         result.append((tmp_row, entry_data, total))
 
     entry_header2: list[ValueHeader] = []
     for (explode_field, col_val), explode_values in entry_headers.items():
         for explode_value in explode_values:
-            entry_header2.append(
-                ValueHeader(type="value", header_value=explode_value, header_field=explode_field, column_field=col_val)
-            )
+            if col_val != "_count":
+                header = ValueHeader(
+                    type="value", header_value=explode_value, header_field=explode_field, column_field=col_val
+                )
+            else:
+                header = ValueHeader(type="total", header_value=explode_value, header_field=explode_field)
+            entry_header2.append(header)
 
     def columns_key(x: ValueHeader):
         if not x.column_field:
-            raise InternalError()
-        return alphanumeric_key(x.header_field), alphanumeric_key(x.column_field), alphanumeric_key(x.header_value)
+            column = "count"
+        else:
+            column = x.column_field
+        return alphanumeric_key(x.header_field), alphanumeric_key(column), alphanumeric_key(x.header_value)
 
     # add the column headers for extra columns
     final_headers.extend(sorted(entry_header2, key=columns_key))
@@ -122,9 +136,15 @@ def count(
     rows = []
     for tmp_row, entry_data, total in result:
         for entry_header in entry_header2:
-            tmp_row.append(
-                list(entry_data.get((entry_header.header_field, entry_header.column_field, entry_header.header_value)))
-            )
+            if entry_header.column_field:
+                column = entry_header.column_field
+            else:
+                column = "_count"
+            asdf = entry_data.get((entry_header.header_field, column, entry_header.header_value))
+            if column != "_count":
+                tmp_row.append(list(asdf))
+            else:
+                tmp_row.append(asdf)
         tmp_row.append(total)
         rows.append(tmp_row)
 

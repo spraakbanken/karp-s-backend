@@ -159,8 +159,8 @@ def get_columns_param(name: str):
     # TODO if = is omitted, can we simply show the available values and use field name as heading
     # TODO RHS could be a field and an operation, for example average. like count(*) in SQL or avg(freq) where freq is a field
     def inner(
-        columns: str | None = Query(
-            None, alias="columns", title="Extra columns", description=columns_param_description
+        columns: str = Query(
+            "resourceId=_count", alias="columns", title="Extra columns", description=columns_param_description
         ),
     ) -> list[tuple[str, str]]:
         if not columns:
