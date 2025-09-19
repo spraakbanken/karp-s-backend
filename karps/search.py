@@ -74,8 +74,8 @@ def count(
     compile = sorted(compile, key=alphanumeric_key)
     # sort columns by the "exploding" column
     columns = sorted(columns, key=lambda column: alphanumeric_key(column[0]))
-    flattened_columns = [item for sublist in columns or () for item in sublist]
-    selection = set(list(compile) + flattened_columns)
+    flattened_columns = list(set([item for sublist in columns or () for item in sublist]))
+    selection = compile + flattened_columns
     ensure_fields_exist(resources, selection)
     s = get_search(main_config, resources, parse_query(q), selection=selection, sort=[])
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns, sort=sort)
@@ -95,11 +95,11 @@ def count(
     for row in res:
         total = row[0]
         tmp_row = list(row[1:last_index])
-        entry_data = {}
+        entry_data = defaultdict(set)
         if flattened_columns:
             for elem in row[-1]:
                 for [col_name, col_val] in columns:
-                    entry_data[elem[col_name]] = elem[col_val]
+                    entry_data[col_name, col_val, elem[col_name]].add(elem[col_val])
                     entry_headers[col_name, col_val].add(elem[col_name])
         result.append((tmp_row, entry_data, total))
 
@@ -122,7 +122,9 @@ def count(
     rows = []
     for tmp_row, entry_data, total in result:
         for entry_header in entry_header2:
-            tmp_row.append(entry_data.get(entry_header.header_value))
+            tmp_row.append(
+                list(entry_data.get((entry_header.header_field, entry_header.column_field, entry_header.header_value)))
+            )
         tmp_row.append(total)
         rows.append(tmp_row)
 

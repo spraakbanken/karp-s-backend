@@ -1,6 +1,6 @@
 # serializer version: 1
 # name: test_count
-  CountResult(headers=[Header(type='compile', column_field='entry_word'), ValueHeader(type='value', column_field='ud_pos', header_field='resource_id', header_value='ao'), Header(type='total', column_field=None)], table=[['eventuell', 'ADJ', 1]])
+  CountResult(headers=[Header(type='compile', column_field='entry_word'), ValueHeader(type='value', column_field='ud_pos', header_field='resource_id', header_value='ao'), Header(type='total', column_field=None)], table=[['eventuell', ['ADJ'], 1]])
 # ---
 # name: test_search
   SearchResult(hits=[HitResponse(entry={'ud_pos': 'ADJ', 'baseform': 'eventuell', 'nativePartOfSpeech': 'adjektiv', 'rank': 368, 'lemgram': ['eventuell..av.1']}, resource_id='ao')], resource_hits={'ao': 1}, resource_order=['ao'], total=1)
