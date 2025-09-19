@@ -11,8 +11,8 @@ class JSONFormatter(logging.Formatter):
             "ts": datetime.now().isoformat(),
             # TODO disambiguate queries from /search and /count
             # TODO /search makes many queries - could be nice to connect them in the log
-            "q": record.args["q"],
-            "took_s": record.args["took"],
+            "q": getattr(record, "args")["q"],
+            "took_s": getattr(record, "args")["took"],
             # log true/false depending on if the logging call was made when an exception has occurred
             "error": bool(record.exc_info),
         }
