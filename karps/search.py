@@ -140,7 +140,7 @@ def count(
                 column = entry_header.column_field
             else:
                 column = "_count"
-            asdf = entry_data.get((entry_header.header_field, column, entry_header.header_value))
+            asdf = entry_data.get((entry_header.header_field, column, entry_header.header_value), [])
             if column != "_count":
                 tmp_row.append(list(asdf))
             else:
