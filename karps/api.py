@@ -88,7 +88,7 @@ will be used for values in the cells of that column. If there are multiple value
 will be shown as a list.
 
 It is possible to replace the field of the right-hand side with the keyword `_count` - `columns=resourceId=_count`.
-The is the default value if `columns` is omitted. With this, the number of
+This is the default value if `columns` is omitted. With this, the number of
 hits per unique value of the selected field will be shown.
 
 The total number of rows and columns from `compile` will always be shown regardless of the value of `columns`.
