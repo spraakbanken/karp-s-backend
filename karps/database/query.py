@@ -138,9 +138,7 @@ class SQLQuery:
                 else:
                     selection = ", ".join(sel)
             if self.table:
-                # for now - use distinct to avoid tmp explosion of values
-                distinct = "DISTINCT " if not top_level else ""
-                s += f"SELECT {distinct}{selection} FROM `{self.table}`"
+                s += f"SELECT {selection} FROM `{self.table}`"
             elif self.inner_queries:
                 s += (
                     f"SELECT {selection} FROM ("
