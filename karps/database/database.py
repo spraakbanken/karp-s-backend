@@ -149,7 +149,7 @@ def add_aggregation(
         sel.append(
             (
                 # TODO move all sql generation into karps.database.query
-                f"CONCAT('[', GROUP_CONCAT(JSON_OBJECT({', '.join([f"'{column}', {column}" for column in columns])})), ']')",
+                f"CONCAT('[', GROUP_CONCAT(JSON_OBJECT({', '.join([f"'{column}', `{column}`" for column in columns])})), ']')",
                 "entry_data",
             )
         )
