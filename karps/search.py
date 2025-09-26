@@ -103,7 +103,12 @@ def count(
                     if col_val != "_count":
                         if column_identifier not in entry_data:
                             entry_data[column_identifier] = set()
-                        entry_data[column_identifier].add(elem[col_val])
+                        if elem[col_val] is not None:
+                            if isinstance(elem[col_val], list):
+                                add_elem = tuple(elem[col_val])
+                            else:
+                                add_elem = elem[col_val]
+                            entry_data[column_identifier].add(add_elem)
                     else:
                         if column_identifier not in entry_data:
                             entry_data[column_identifier] = 0
