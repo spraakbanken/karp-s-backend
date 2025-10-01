@@ -7,7 +7,8 @@ class SQLQuery:
         self.selection = selection
         self.table = None
         # where
-        self.clause = None
+        self._op = "and"
+        self.clauses = []
         # each element will generate a CTE and a JOIN
         self.joins = {}
         self._group_by = None
@@ -40,8 +41,12 @@ class SQLQuery:
         self._order_by = sort
         return self
 
+    def op(self, _op):
+        self._op = _op
+        return self
+
     def where(self, clause):
-        self.clause = clause
+        self.clauses.append(clause)
         return self
 
     def from_page(self, page):
@@ -159,15 +164,18 @@ class SQLQuery:
                     # use alias or field name
                     name = self.joins[join_field][0] or join_field
                     if self.joins[join_field][1]:
-                        s += f" JOIN `{name}__where` ON `{name}__where`.__parent_id = {table_prefix}__id"
+                        self.clauses.append(
+                            f"EXISTS (SELECT 1 FROM `{name}__where` WHERE {table_prefix}__id = __parent_id)"
+                        )
+                        # s += f" JOIN `{name}__where` ON `{name}__where`.__parent_id = {table_prefix}__id"
 
                     # use left joins for data fetching (skip when just counting rows)
                     if not count:
                         s += f" LEFT JOIN `{name}__data` ON `{name}__data`.__parent_id = {table_prefix}__id"
 
             # where for queries on data in columns, not joins
-            if self.clause:
-                s += f" WHERE {self.clause}"
+            if self.clauses:
+                s += f" WHERE {f' {self._op} '.join(self.clauses)}"
 
             if self._group_by:
                 s += f" GROUP BY {self._group_by}"

@@ -2,14 +2,22 @@
 
 start
     =
-    binary_query_expression $
+    expression $
     ;
 
-binary_query_expression
+expression
+    =
+    | logical_expression
+    # to simplyfied reading the resulting AST, treat non-boolean top-level expressions as an and with a single clause
+    | op:`and` args:{query_expression}+
+    ;
+
+query_expression
     =
     | text_arg_expr
     | any_arg_expr
     ;
+
 
 text_arg_expr::TextArgExpression
     =
@@ -38,6 +46,21 @@ any_arg_op
     | 'lte'
     ;
 
+logical_expression
+    =
+    | and
+    | or
+    ;
+
+and::And
+    =
+    op:'and' '(' args:'||'.{query_expression}* ')'
+    ;
+
+or::Or
+    =
+    op:'or' '(' args:'||'.{query_expression}* ')'
+    ;
 
 any_value
     =
@@ -63,5 +86,6 @@ integer_value::int
     /\d+$/
     ;
 
-# for simplicity, add |,(,) as not allowed here, even though it shouldn't matter. should be possible to name  field "myfield|"
+# for simplicity, add |,as not allowed here, even though it shouldn't matter. should be possible to name  field "myfield|"
 identifier::Identifier = /[^|]+/ ;
+

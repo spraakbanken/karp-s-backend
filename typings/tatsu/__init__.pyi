@@ -1,7 +1,11 @@
-class QueryTree:
+class InnerQueryTree:
     arg: list[str] | str | int | bool
-    op: str | None
-    field: str | None
+    op: str
+    field: str
+
+class QueryTree:
+    op: str
+    args: list[InnerQueryTree]
 
 class Parser:
     def parse(
