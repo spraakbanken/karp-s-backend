@@ -1,5 +1,5 @@
 [project]
-name = "karps-backend"
+name = "karp-s-backend"
 version = "1.0.0-dev"
 description = "Structed data infrastructure"
 readme = "README.md"

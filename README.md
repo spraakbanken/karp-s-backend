@@ -1,4 +1,4 @@
-# Karp-s
+# Karp-S
 
 Backend for Karp-S
 
