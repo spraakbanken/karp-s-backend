@@ -4,9 +4,9 @@ Backend for Karp-S
 
 ## Installation instructions
 
-One way to do it, there are many! For example uv can handle both
+One way to do it, there are many! For example `uv` can handle both
 Python versions and virtual environments completely. In this example
-only Python is installed and uv is installed in a virtual environment.
+only Python is pre-installed and uv is installed in a virtual environment.
 
 1. Create and activate a virtual env
 2. Run UV_PROJECT_ENVIRONMENT=$VIRTUAL_ENV
