@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Iterable, Sequence
 from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_collection_fields
 from karps.database.database import add_aggregation, run_paged_searches, run_searches, get_search
-from karps.database.query import SQLQuery
 from karps.errors.errors import InternalError, UserError
 from karps.models import Header, HitResponse, SearchResult, ValueHeader
 from karps.query.query import parse_query
@@ -19,10 +18,10 @@ def search(
     sort: Sequence[tuple[str, str]] = (),
 ) -> SearchResult:
     resources = sorted(resources, key=lambda r: alphanumeric_key(r.resource_id))
-    s: list[SQLQuery] = get_search(main_config, resources, parse_query(q), sort=sort)
+    used_resources, s = get_search(main_config, resources, parse_query(q), sort=sort)
 
     results, count_results = run_paged_searches(
-        env, s, size=size, _from=_from, collection_fields=get_collection_fields(main_config, resources)
+        env, s, size=size, _from=_from, collection_fields=get_collection_fields(main_config, used_resources)
     )
 
     total = 0
@@ -30,7 +29,7 @@ def search(
     resource_hits = {}
     resource_order = []
     page_exists = _from == 0
-    for resource_config, resource_hit in zip(resources, results):
+    for resource_config, resource_hit in zip(used_resources, results):
         if resource_hit is None:
             continue
         page_exists = True
@@ -52,7 +51,7 @@ def search(
     if not page_exists:
         raise UserError(f"Requested from does not exist, value: {_from}")
 
-    for resource_config, lexicon_total in zip(resources, count_results):
+    for resource_config, lexicon_total in zip(used_resources, count_results):
         resource_order.append(resource_config.resource_id)
         if lexicon_total is None:
             raise InternalError("Count queries failed")
@@ -77,7 +76,7 @@ def count(
     flattened_columns = list(set([item for sublist in columns or () for item in sublist if item != "_count"]))
     selection = compile + flattened_columns
     ensure_fields_exist(resources, selection)
-    s = get_search(main_config, resources, parse_query(q), selection=selection, sort=[])
+    _, s = get_search(main_config, resources, parse_query(q), selection=selection, sort=[])
     agg_s = add_aggregation(s, compile=compile, columns=flattened_columns, sort=sort)
 
     result = []

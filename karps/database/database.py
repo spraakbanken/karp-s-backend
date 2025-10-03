@@ -68,9 +68,11 @@ def get_search(
     q: Query,
     selection: Iterable[str] = ("*"),
     sort: Sequence[tuple[str, str]] = (),
-) -> list[SQLQuery]:
+) -> tuple[list[ResourceConfig], list[SQLQuery]]:
     """
     For each resource, creates a select statement with a where clause with constraints from q
+    Returns a tuple of resource IDs and corresponding queries, because it is possble that
+    not all requested resources are supported for the search.
     """
 
     fields = main_config.fields
@@ -96,13 +98,23 @@ def get_search(
             sel.append((resource_config.entry_word.field, "entry_word"))
         return sel
 
-    res = []
+    res_resources = []
+    res_q = []
     for resource_config in resources:
         sel = get_selection_str(resource_config, selection_str)
         sql_q = select(sel).from_table(resource_config.resource_id)
 
         # get sql where clause from query
         bool_op, parts = get_query(main_config, resource_config.entry_word.field, q)
+
+        ignore_resource = False
+        for field, _ in parts:
+            if field not in resource_config.fields:
+                # if a query is posed with a field that is not supported in the resource, ignore the resource
+                ignore_resource = True
+                break
+        if ignore_resource:
+            continue
 
         for field in resource_config.fields:
             if parts:
@@ -131,8 +143,9 @@ def get_search(
                 # check that the sort fields are available in resource
                 _check_sort_allowed(resource_config, sort)
                 sql_q.order_by(sort)
-        res.append(sql_q)
-    return res
+        res_resources.append(resource_config)
+        res_q.append(sql_q)
+    return res_resources, res_q
 
 
 def add_aggregation(

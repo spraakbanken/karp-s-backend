@@ -55,7 +55,7 @@ def get_power_set(values):
 
 
 def create_search_query(query=None):
-    return create_search_queries(query=query, resource_configs=resource_configs[0:1])[0].to_string()
+    return create_search_queries(query=query, resource_configs=resource_configs[0:1])[1][0].to_string()
 
 
 def create_search_queries(query=[], resource_configs=(), selection=None):
@@ -103,7 +103,7 @@ def create_count_query(compile_type=None, columns_type=None, query=None):
     flattened_columns = [item for sublist in columns or () for item in sublist]
     selection = set(list(compile) + flattened_columns)
 
-    queries = create_search_queries(query, resource_configs=resource_configs, selection=sorted(list(selection)))
+    _, queries = create_search_queries(query, resource_configs=resource_configs, selection=sorted(list(selection)))
     return add_aggregation(queries=queries, compile=compile, columns=flattened_columns, sort=()).to_string()
 
 
