@@ -121,7 +121,7 @@ def count(
                     type="value", header_value=explode_value, header_field=explode_field, column_field=col_val
                 )
             else:
-                header = ValueHeader(type="total", header_value=explode_value, header_field=explode_field)
+                header = ValueHeader(type="count", header_value=explode_value, header_field=explode_field)
             entry_header2.append(header)
 
     def columns_key(x: ValueHeader):
