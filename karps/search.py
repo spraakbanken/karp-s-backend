@@ -144,11 +144,11 @@ def count(
                 column = entry_header.column_field
             else:
                 column = "_count"
-            asdf = entry_data.get((entry_header.header_field, column, entry_header.header_value), [])
+            cell_content = entry_data.get((entry_header.header_field, column, entry_header.header_value), [])
             if column != "_count":
-                tmp_row.append(list(asdf))
+                tmp_row.append(list(cell_content))
             else:
-                tmp_row.append(asdf)
+                tmp_row.append(cell_content)
         tmp_row.append(total)
         rows.append(tmp_row)
 
