@@ -144,7 +144,9 @@ def count(
                 column = entry_header.column_field
             else:
                 column = "_count"
-            cell_content = entry_data.get((entry_header.header_field, column, entry_header.header_value), [])
+            # different default value for data columns and count columns
+            default_val = [] if column != "_count" else 0
+            cell_content = entry_data.get((entry_header.header_field, column, entry_header.header_value), default_val)
             if column != "_count":
                 tmp_row.append(list(cell_content))
             else:
