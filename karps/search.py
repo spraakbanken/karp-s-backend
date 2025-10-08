@@ -86,6 +86,28 @@ def _make_column_data(data_column, columns, entry_headers, flattened_columns, to
     return entry_data
 
 
+def _columns_key(x: ValueHeader):
+    if not x.column_field:
+        column = "count"
+    else:
+        column = x.column_field
+    return alphanumeric_key(x.header_field), alphanumeric_key(column), alphanumeric_key(x.header_value)
+
+
+def _create_columns_headers(columns_headers):
+    headers: list[ValueHeader] = []
+    for (explode_field, col_val), explode_values in columns_headers.items():
+        for explode_value in explode_values:
+            if col_val != "_count":
+                header = ValueHeader(
+                    type="value", header_value=explode_value, header_field=explode_field, column_field=col_val
+                )
+            else:
+                header = ValueHeader(type="count", header_value=explode_value, header_field=explode_field)
+            headers.append(header)
+    return sorted(headers, key=_columns_key)
+
+
 def count(
     env: Env,
     main_config: MainConfig,
@@ -118,61 +140,41 @@ def count(
     else:
         last_index = None
 
-    entry_headers = defaultdict(set)
+    # collect the headers caused by using columns-parameter (not known at query time)
+    columns_headers = defaultdict(set)
 
     def handle_row(row, total_row=False):
-        entry_data = _make_column_data(row[-1], columns, entry_headers, flattened_columns, total_row=total_row)
-        total = row[0]
-        result.append((list(row[1:last_index]), entry_data, total))
+        entry_data = _make_column_data(row[-1], columns, columns_headers, flattened_columns, total_row=total_row)
+        # append total directly after compile columns
+        result.append((list(row[1:last_index]) + row[0:1], entry_data))
 
     handle_row(total_res[0], total_row=True)
     for row in res:
         handle_row(row)
-
-    entry_header2: list[ValueHeader] = []
-    for (explode_field, col_val), explode_values in entry_headers.items():
-        for explode_value in explode_values:
-            if col_val != "_count":
-                header = ValueHeader(
-                    type="value", header_value=explode_value, header_field=explode_field, column_field=col_val
-                )
-            else:
-                header = ValueHeader(type="count", header_value=explode_value, header_field=explode_field)
-            entry_header2.append(header)
-
-    def columns_key(x: ValueHeader):
-        if not x.column_field:
-            column = "count"
-        else:
-            column = x.column_field
-        return alphanumeric_key(x.header_field), alphanumeric_key(column), alphanumeric_key(x.header_value)
 
     # just the fields used in compile here
     final_headers = [Header(type="compile", column_field=header) for header in headers[1:last_index]]
     # add the column header for "total"
     final_headers.append(Header(type="total"))
     # add the column headers for extra columns
-    final_headers.extend(sorted(entry_header2, key=columns_key))
+    final_headers.extend(_create_columns_headers(columns_headers))
+    # this is done as a final step when we know exactly what headers are in the result
     rows = []
-    for i, (tmp_row, entry_data, total) in enumerate(result):
-        # append total directly after compile columns
-        tmp_row.append(total)
-        for entry_header in entry_header2:
-            if entry_header.column_field:
-                column = entry_header.column_field
-            else:
-                column = "_count"
-            # different default value for data columns and count columns
-            default_val = [] if column != "_count" else 0
-            cell_content = entry_data.get((entry_header.header_field, column, entry_header.header_value), default_val)
-            if column != "_count":
-                if i != 0:
-                    tmp_row.append(list(cell_content))
+    for i, (row, entry_data) in enumerate(result):
+        for (explode_field, col_val), explode_values in columns_headers.items():
+            for explode_value in explode_values:
+                column = col_val
+                # different default value for data columns and count columns
+                default_val = [] if column != "_count" else 0
+                cell_content = entry_data.get((explode_field, column, explode_value), default_val)
+                if column != "_count":
+                    if i != 0:
+                        row.append(list(cell_content))
+                    else:
+                        # for the total row when cell content is not count, show -
+                        row.append("-")
                 else:
-                    # for the total row when cell content is not count, show -
-                    tmp_row.append("-")
-            else:
-                tmp_row.append(cell_content)
-        rows.append(tmp_row)
+                    row.append(cell_content)
+        rows.append(row)
 
     return final_headers, rows
