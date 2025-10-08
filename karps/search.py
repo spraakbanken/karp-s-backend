@@ -87,8 +87,6 @@ def count(
     else:
         last_index = None
 
-    # just the fields used in compile here
-    final_headers = [Header(type="compile", column_field=header) for header in headers[1:last_index]]
     entry_headers = defaultdict(set)
 
     for row in res:
@@ -133,12 +131,16 @@ def count(
             column = x.column_field
         return alphanumeric_key(x.header_field), alphanumeric_key(column), alphanumeric_key(x.header_value)
 
-    # add the column headers for extra columns
-    final_headers.extend(sorted(entry_header2, key=columns_key))
+    # just the fields used in compile here
+    final_headers = [Header(type="compile", column_field=header) for header in headers[1:last_index]]
     # add the column header for "total"
     final_headers.append(Header(type="total"))
+    # add the column headers for extra columns
+    final_headers.extend(sorted(entry_header2, key=columns_key))
     rows = []
     for tmp_row, entry_data, total in result:
+        # append total directly after compile columns
+        tmp_row.append(total)
         for entry_header in entry_header2:
             if entry_header.column_field:
                 column = entry_header.column_field
@@ -151,7 +153,6 @@ def count(
                 tmp_row.append(list(cell_content))
             else:
                 tmp_row.append(cell_content)
-        tmp_row.append(total)
         rows.append(tmp_row)
 
     return final_headers, rows
