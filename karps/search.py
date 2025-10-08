@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Iterable, Sequence
 from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_collection_fields
-from karps.database.database import add_aggregation, run_paged_searches, run_searches, get_search
+from karps.database.database import add_aggregation, get_total_row, run_paged_searches, run_searches, get_search
 from karps.errors.errors import InternalError, UserError
 from karps.models import Header, HitResponse, SearchResult, ValueHeader
 from karps.query.query import parse_query
@@ -61,6 +61,31 @@ def search(
     return SearchResult(hits=all_hits, resource_hits=resource_hits, resource_order=resource_order, total=total)
 
 
+def _make_column_data(data_column, columns, entry_headers, flattened_columns, total_row=False):
+    entry_data = {}
+    if not flattened_columns:
+        return entry_data
+    for elem in data_column:
+        for [col_name, col_val] in columns:
+            column_identifier = (col_name, col_val, elem[col_name])
+            if col_val != "_count":
+                if not total_row:
+                    if column_identifier not in entry_data:
+                        entry_data[column_identifier] = set()
+                    if elem[col_val] is not None:
+                        if isinstance(elem[col_val], list):
+                            add_elem = tuple(elem[col_val])
+                        else:
+                            add_elem = elem[col_val]
+                        entry_data[column_identifier].add(add_elem)
+            else:
+                if column_identifier not in entry_data:
+                    entry_data[column_identifier] = 0
+                entry_data[column_identifier] += 1
+            entry_headers[col_name, col_val].add(elem[col_name])
+    return entry_data
+
+
 def count(
     env: Env,
     main_config: MainConfig,
@@ -82,6 +107,12 @@ def count(
     result = []
     headers, res = next(run_searches(env, [agg_s], collection_fields=get_collection_fields(main_config, resources)))
 
+    total_agg_s, result_handler = get_total_row(agg_s, compile)
+    _, total_res = next(
+        run_searches(env, [total_agg_s], collection_fields=get_collection_fields(main_config, resources))
+    )
+    result_handler(total_res)
+
     if flattened_columns:
         last_index = -1
     else:
@@ -89,29 +120,14 @@ def count(
 
     entry_headers = defaultdict(set)
 
-    for row in res:
+    def handle_row(row, total_row=False):
+        entry_data = _make_column_data(row[-1], columns, entry_headers, flattened_columns, total_row=total_row)
         total = row[0]
-        tmp_row = list(row[1:last_index])
-        entry_data = {}
-        if flattened_columns:
-            for elem in row[-1]:
-                for [col_name, col_val] in columns:
-                    column_identifier = (col_name, col_val, elem[col_name])
-                    if col_val != "_count":
-                        if column_identifier not in entry_data:
-                            entry_data[column_identifier] = set()
-                        if elem[col_val] is not None:
-                            if isinstance(elem[col_val], list):
-                                add_elem = tuple(elem[col_val])
-                            else:
-                                add_elem = elem[col_val]
-                            entry_data[column_identifier].add(add_elem)
-                    else:
-                        if column_identifier not in entry_data:
-                            entry_data[column_identifier] = 0
-                        entry_data[column_identifier] += 1
-                    entry_headers[col_name, col_val].add(elem[col_name])
-        result.append((tmp_row, entry_data, total))
+        result.append((list(row[1:last_index]), entry_data, total))
+
+    handle_row(total_res[0], total_row=True)
+    for row in res:
+        handle_row(row)
 
     entry_header2: list[ValueHeader] = []
     for (explode_field, col_val), explode_values in entry_headers.items():
@@ -138,7 +154,7 @@ def count(
     # add the column headers for extra columns
     final_headers.extend(sorted(entry_header2, key=columns_key))
     rows = []
-    for tmp_row, entry_data, total in result:
+    for i, (tmp_row, entry_data, total) in enumerate(result):
         # append total directly after compile columns
         tmp_row.append(total)
         for entry_header in entry_header2:
@@ -150,7 +166,11 @@ def count(
             default_val = [] if column != "_count" else 0
             cell_content = entry_data.get((entry_header.header_field, column, entry_header.header_value), default_val)
             if column != "_count":
-                tmp_row.append(list(cell_content))
+                if i != 0:
+                    tmp_row.append(list(cell_content))
+                else:
+                    # for the total row when cell content is not count, show -
+                    tmp_row.append("-")
             else:
                 tmp_row.append(cell_content)
         rows.append(tmp_row)

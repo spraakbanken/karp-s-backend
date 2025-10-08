@@ -185,6 +185,23 @@ def add_aggregation(
     return s
 
 
+def get_total_row(agg_s: SQLQuery, compile):
+    total_q = agg_s
+    total_q._order_by = None
+    total_q._group_by = None
+    for _ in range(0, len(compile)):
+        total_q.selection.pop(1)
+
+    def c(total_res):
+        if len(total_res) != 1:
+            raise RuntimeError("There should only be 1 total row")
+
+        for i in range(1, len(compile) + 1):
+            total_res[0].insert(i, "SUM")
+
+    return total_q, c
+
+
 def run_searches(
     config: Env, sql_queries: Iterable[SQLQuery], collection_fields: Iterable = ()
 ) -> Iterator[tuple[list[str], list[list[Any]]]]:
