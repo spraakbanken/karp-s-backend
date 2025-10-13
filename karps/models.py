@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from typing import Sequence
 import pydantic
 
 
@@ -50,3 +52,14 @@ class CountResult(BaseModel):
 
 class UserErrorSchema(BaseModel):
     message: str
+
+
+@dataclass
+class Request:
+    pass
+
+
+@dataclass
+class CountRequest(Request):
+    compile: Sequence[str]
+    columns: tuple[str, str]

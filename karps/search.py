@@ -1,9 +1,15 @@
 from collections import defaultdict
 from typing import Iterable, Sequence
 from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_collection_fields
-from karps.database.database import add_aggregation, get_total_row, run_paged_searches, run_searches, get_search
+from karps.database.database import (
+    add_aggregation,
+    run_paged_searches,
+    run_searches,
+    get_search,
+)
+from karps.database.query import SQLQuery
 from karps.errors.errors import InternalError, UserError
-from karps.models import Header, HitResponse, SearchResult, ValueHeader
+from karps.models import CountRequest, Header, HitResponse, SearchResult, ValueHeader
 from karps.query.query import parse_query
 from karps.util import alphanumeric_key
 
@@ -61,28 +67,22 @@ def search(
     return SearchResult(hits=all_hits, resource_hits=resource_hits, resource_order=resource_order, total=total)
 
 
-def _make_column_data(data_column, columns, entry_headers, flattened_columns, total_row=False):
+def _make_column_data(data_column, column, entry_headers):
+    """
+    Find out which potentially new headers this row will create and layout data
+    """
+    col_field = column[0]
+    cell_field = column[1]
     entry_data = {}
-    if not flattened_columns:
-        return entry_data
     for elem in data_column:
-        for [col_name, col_val] in columns:
-            column_identifier = (col_name, col_val, elem[col_name])
-            if col_val != "_count":
-                if not total_row:
-                    if column_identifier not in entry_data:
-                        entry_data[column_identifier] = set()
-                    if elem[col_val] is not None:
-                        if isinstance(elem[col_val], list):
-                            add_elem = tuple(elem[col_val])
-                        else:
-                            add_elem = elem[col_val]
-                        entry_data[column_identifier].add(add_elem)
-            else:
-                if column_identifier not in entry_data:
-                    entry_data[column_identifier] = 0
-                entry_data[column_identifier] += 1
-            entry_headers[col_name, col_val].add(elem[col_name])
+        col_val = elem[col_field]
+        if cell_field != "_count":
+            cell_val = elem[cell_field]
+        else:
+            cell_val = ()
+        column_identifier = (col_field, col_val, cell_field)
+        entry_data[column_identifier] = {"values": cell_val, "count": elem["count"]}
+        entry_headers[col_field, cell_field].add(col_val)
     return entry_data
 
 
@@ -120,61 +120,83 @@ def count(
     compile = sorted(compile, key=alphanumeric_key)
     # sort columns by the "exploding" column
     columns = sorted(columns, key=lambda column: alphanumeric_key(column[0]))
-    flattened_columns = list(set([item for sublist in columns or () for item in sublist if item != "_count"]))
-    selection = compile + flattened_columns
+
+    # just the fields used in compile here
+    final_headers = [Header(type="compile", column_field=header) for header in compile]
+    # add the column header for "total"
+    final_headers.append(Header(type="total"))
+
+    rows = []
+    for column in columns:
+        model_headers = _count_subquery(main_config, env, resources, parse_query(q), compile, column, sort, rows)
+        # add the column headers for extra columns
+        final_headers.extend(model_headers)
+
+    return final_headers, rows
+
+
+def _count_subquery(main_config, env, resources, query, compile, column, sort, rows):
+    selection = compile + [column[0]] + ([column[1]] if column[1] != "_count" else [])
     ensure_fields_exist(resources, selection)
-    _, s = get_search(main_config, resources, parse_query(q), selection=selection, sort=[])
-    agg_s = add_aggregation(s, compile=compile, columns=flattened_columns, sort=sort)
+    configs, s = get_search(main_config, resources, query, selection=selection, sort=[])
+    s2: Sequence[tuple[ResourceConfig, SQLQuery]] = list(zip(configs, s))
 
-    result = []
-    headers, res = next(run_searches(env, [agg_s], collection_fields=get_collection_fields(main_config, resources)))
+    agg_s = add_aggregation(s2, compile, column, sort=sort)
 
-    total_agg_s, result_handler = get_total_row(agg_s, compile)
-    _, total_res = next(
-        run_searches(env, [total_agg_s], collection_fields=get_collection_fields(main_config, resources))
+    _, res = next(
+        run_searches(
+            env,
+            [agg_s],
+            CountRequest(compile=compile, columns=column),
+            collection_fields=get_collection_fields(main_config, resources),
+        )
     )
-    result_handler(total_res)
-
-    if flattened_columns:
-        last_index = -1
-    else:
-        last_index = None
 
     # collect the headers caused by using columns-parameter (not known at query time)
     columns_headers = defaultdict(set)
 
-    def handle_row(row, total_row=False):
-        entry_data = _make_column_data(row[-1], columns, columns_headers, flattened_columns, total_row=total_row)
+    def handle_row(row):
+        entry_data = _make_column_data(row[-1], column, columns_headers)
         # append total directly after compile columns
-        result.append((list(row[1:last_index]) + row[0:1], entry_data))
+        return list(row[1:-1]) + [int(row[0])], entry_data
 
-    handle_row(total_res[0], total_row=True)
+    # TODO reenable total row
+    # handle_row([total_rows, total_row_columns], total_row=True)
+
+    result = []
     for row in res:
-        handle_row(row)
+        result.append(handle_row(row))
 
-    # just the fields used in compile here
-    final_headers = [Header(type="compile", column_field=header) for header in headers[1:last_index]]
-    # add the column header for "total"
-    final_headers.append(Header(type="total"))
     # add the column headers for extra columns
-    final_headers.extend(_create_columns_headers(columns_headers))
-    # this is done as a final step when we know exactly what headers are in the result
-    rows = []
+    model_headers = _create_columns_headers(columns_headers)
+
+    append_to_existing = bool(rows)
     for i, (row, entry_data) in enumerate(result):
+        if append_to_existing:
+            use_row = []
+        else:
+            use_row = row
         for (explode_field, col_val), explode_values in columns_headers.items():
             for explode_value in explode_values:
-                column = col_val
-                # different default value for data columns and count columns
-                default_val = [] if column != "_count" else 0
-                cell_content = entry_data.get((explode_field, column, explode_value), default_val)
-                if column != "_count":
-                    if i != 0:
-                        row.append(list(cell_content))
+                cell_content = entry_data.get((explode_field, explode_value, col_val))
+                if cell_content:
+                    if column[1] == "_count":
+                        use_row.append(cell_content["count"])
                     else:
-                        # for the total row when cell content is not count, show -
-                        row.append("-")
+                        values = [value[column[1]] for value in cell_content["values"]]
+                        # TODO alphanumeric_key does not support non-str values, including None
+                        # However, should there really be any None values here...
+                        # sorted_values = sorted(values, key=alphanumeric_key)
+                        use_row.append([value for value in values if value is not None])
                 else:
-                    row.append(cell_content)
-        rows.append(row)
-
-    return final_headers, rows
+                    if column[1] == "_count":
+                        use_row.append(0)
+                    else:
+                        use_row.append([])
+        if append_to_existing:
+            # for the succeding requests, append columns data to preexisting rows
+            rows[i].extend(use_row)
+        else:
+            # for the first request, add rows
+            rows.append(use_row)
+    return model_headers

@@ -1,8 +1,10 @@
 from typing import Sequence
 
+from karps.config import ResourceConfig
+
 
 class SQLQuery:
-    def __init__(self, selection: list[tuple[str, str]]):
+    def __init__(self, selection: Sequence[tuple[str, str]]):
         # tuple pair represents value (1) AS alias (2)
         self.selection = selection
         self.table = None
@@ -21,7 +23,11 @@ class SQLQuery:
         self.table = tbl_name
         return self
 
-    def from_inner_query(self, queries: list["SQLQuery"]) -> "SQLQuery":
+    def from_inner_query(self, queries: Sequence[tuple[ResourceConfig | None, "SQLQuery"]]) -> "SQLQuery":
+        """
+        If a query is on a concrete DB table, it is accomanied by a resource config. If the query
+        is on a derived table, the resource config can be None
+        """
         self.inner_queries = queries
         return self
 
@@ -102,10 +108,23 @@ class SQLQuery:
                     ctes.append((join, qs))
 
                 # add needed CTE for inner queries
-                for inner_q in self.inner_queries:
+                for _, inner_q in self.inner_queries:
                     for join in inner_q.joins:
                         qs = inner_q.get_ctes(join)
                         ctes.append((join, qs))
+
+                    # add needed CTE for inner inner queries
+                    for _, inner_inner_q in inner_q.inner_queries:
+                        for join in inner_inner_q.joins:
+                            qs = inner_inner_q.get_ctes(join)
+                            ctes.append((join, qs))
+
+                        # add needed CTE for inner inner inner queries :)
+                        for _, inner_inner_inner_q in inner_inner_q.inner_queries:
+                            for join in inner_inner_inner_q.joins:
+                                qs = inner_inner_inner_q.get_ctes(join)
+                                ctes.append((join, qs))
+
                 for _, (where_cte, data_cte) in ctes:
                     # query on collection field
                     if where_cte:
@@ -129,6 +148,7 @@ class SQLQuery:
                         or value[0:12] == "GROUP_CONCAT"
                         or value[0:5] == "COUNT"
                         or value[0:6] == "CONCAT"
+                        or value[0:3] == "SUM"
                     ):
                         v = value
                     else:
@@ -147,7 +167,7 @@ class SQLQuery:
             elif self.inner_queries:
                 s += (
                     f"SELECT {selection} FROM ("
-                    + " UNION ALL ".join([s.to_string(top_level=False)[0] for s in self.inner_queries])
+                    + " UNION ALL ".join([s.to_string(top_level=False)[0] for _, s in self.inner_queries])
                     + ") as innerq"
                 )
             else:

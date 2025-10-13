@@ -165,7 +165,7 @@ def get_columns_param(name: str):
         ),
     ) -> list[tuple[str, str]]:
         if not columns:
-            return []
+            return [("resource_id", "_count")]
         return [twotuple(column_setting.split("=")) for column_setting in normalize(columns).split(",")]
 
     return inner

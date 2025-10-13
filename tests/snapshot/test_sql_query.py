@@ -89,22 +89,23 @@ def create_count_query(compile_type=None, columns_type=None, query=None):
     else:
         raise RuntimeError("missing compile type given")
     if columns_type is None:
-        columns = []
+        columns = None
     elif columns_type == SCALAR:
-        columns = [("resource_id", "data3")]
+        columns = ("resource_id", "data3")
     elif columns_type == COLLECTION:
-        columns = [("resource_id", "col1")]
+        columns = ("resource_id", "col1")
     elif columns_type == ENTRY_WORD:
-        columns = [("resource_id", "entry_word")]
+        columns = ("resource_id", "entry_word")
     else:
         raise RuntimeError("missing comulmns type given")
 
     # TODO these to rows are copied from search.py to add whatever was in compile and columns to the selection
-    flattened_columns = [item for sublist in columns or () for item in sublist]
-    selection = set(list(compile) + flattened_columns)
+    selection = set(list(compile) + list(columns) if columns else ())
 
-    _, queries = create_search_queries(query, resource_configs=resource_configs, selection=sorted(list(selection)))
-    return add_aggregation(queries=queries, compile=compile, columns=flattened_columns, sort=()).to_string()
+    rcs, queries = create_search_queries(query, resource_configs=resource_configs, selection=sorted(list(selection)))
+    return add_aggregation(
+        queries=list(zip(rcs, queries)), compile=compile, column=columns or ("resource_id", "_count"), sort=()
+    ).to_string()
 
 
 # function for generating pytest functions, useful for reporting and being able to update single snapshots

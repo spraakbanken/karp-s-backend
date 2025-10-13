@@ -11,6 +11,7 @@ from mysql.connector.pooling import PooledMySQLConnection
 from karps.config import Env, MainConfig, ResourceConfig
 from karps.errors.errors import UserError
 from karps.logging import get_sql_logger
+from karps.models import CountRequest, Request
 from karps.query.query import Query, get_query
 from karps.database.query import SQLQuery, select
 
@@ -62,6 +63,25 @@ def _check_sort_allowed(resource_config, sort):
             raise UserError(f'Sort by "{field}" is not supported in "{resource_config.resource_id}"')
 
 
+def _get_data_selection(resource_config: ResourceConfig, selection: Iterable[str]) -> list[tuple[str, str | None]]:
+    """
+    Takes a resource configuration and the requested selection and returns the selection to be used
+    along with any needed aliases. If selection is ["*"] all fields in resource will be selected
+    """
+    sel: list[tuple[str, str | None]] | None = None
+    if "*" in selection:
+        sel = [(field, None) for field in resource_config.fields]
+    else:
+        # don't send in resource_id here since it is not actually a column
+        sel = [(col, None) for col in selection if col not in ["resource_id", "entry_word"]]
+
+    if "resource_id" in selection:
+        sel.append((f"'{resource_config.resource_id}'", "resource_id"))
+    if "entry_word" in selection:
+        sel.append((resource_config.entry_word.field, "entry_word"))
+    return sel
+
+
 def get_search(
     main_config: MainConfig,
     resources: list[ResourceConfig],
@@ -77,31 +97,10 @@ def get_search(
 
     fields = main_config.fields
 
-    selection_str: list[tuple[str, str | None]] | None = None
-    if "*" not in selection:
-        # don't send in resource_id here since it is not actually a column
-        selection_str = [(col, None) for col in selection if col not in ["resource_id", "entry_word"]]
-
-    def get_selection_str(
-        resource_config, selection_str: list[tuple[str, str | None]] | None
-    ) -> list[tuple[str, str | None]]:
-        if "*" in selection:
-            selection_str = [(field, None) for field in resource_config.fields]
-
-        if not selection_str:
-            sel = []
-        else:
-            sel = list(selection_str)
-        if "resource_id" in selection:
-            sel.append((f"'{resource_config.resource_id}'", "resource_id"))
-        if "entry_word" in selection:
-            sel.append((resource_config.entry_word.field, "entry_word"))
-        return sel
-
     res_resources = []
     res_q = []
     for resource_config in resources:
-        sel = get_selection_str(resource_config, selection_str)
+        sel = _get_data_selection(resource_config, selection)
         sql_q = select(sel).from_table(resource_config.resource_id)
 
         # get sql where clause from query
@@ -149,29 +148,68 @@ def get_search(
 
 
 def add_aggregation(
-    queries: list[SQLQuery], compile: Sequence[str], columns: list[str], sort: Sequence[tuple[str, str]]
-) -> SQLQuery:
-    """
-    Takes a string containing an list of SQL queries and does aggregations on
-    the fields given in columns
+    queries: Sequence[tuple[ResourceConfig | None, SQLQuery]],
+    compile: Sequence[str],
+    column: tuple[str, str],
+    sort: Sequence[tuple[str, str]] = (),
+):
+    def inner(
+        queries: Sequence[tuple[ResourceConfig | None, SQLQuery]],
+        compile: Sequence[str],
+        collect: Sequence[str] = [],
+        sort: Sequence[tuple[str, str]] = (),
+        innermost=False,
+    ) -> SQLQuery:
+        """
+        Takes a string containing an list of SQL queries and does aggregations on
+        the fields given in columns
 
-    TODO if compile field is collection, the json_field must be expanded to as many rows as there are in the fields, use JSON_TABLE
-    each result column and the field to be presented in it must be included in the inner rows
-    """
-    sel: list[tuple[str, str | None]] = [("COUNT(*)", "total")]
-    for c in compile:
-        sel.append((c, None))
-    if columns:
-        sel.append(
-            (
-                # TODO move all sql generation into karps.database.query
-                f"CONCAT('[', GROUP_CONCAT(JSON_OBJECT({', '.join([f"'{column}', `{column}`" for column in columns])})), ']')",
-                "entry_data",
-            )
-        )
+        TODO if compile field is collection, the json_field must be expanded to as many rows as there are in the fields, use JSON_TABLE
+        each result column and the field to be presented in it must be included in the inner rows
+        """
+        if compile[-1] == "_count":
+            sel: list[tuple[str, str | None]] = []
+        elif innermost:
+            sel = [("COUNT(*)", "count")]
+        else:
+            sel = [("SUM(count)", "count")]
+        for c in compile:
+            if c != "_count":
+                sel.append((c, None))
+        # TODO handle different sizes of collect
+        for field in collect[0:1]:
+            inner_fields = []
+            if len(collect) > 1:
+                for tmpfield in collect[1:]:
+                    if tmpfield != "_count":
+                        inner_fields.append(f"'{tmpfield}', `{tmpfield}`")
+            if field != "_count":
+                sel.append(
+                    (
+                        # TODO move all sql generation into karps.database.query
+                        f"CONCAT('[', GROUP_CONCAT(JSON_OBJECT('{field}', `{field}`,'count', `count`{',' + ','.join(inner_fields) if inner_fields else ''})), ']')",
+                        f"`{field}`",
+                    )
+                )
 
-    s = select(sel).from_inner_query(queries)
-    s.group_by(compile)
+        s = select(sel).from_inner_query(queries)
+        if compile[-1] != "_count":
+            s.group_by(compile)
+        return s
+
+    agg_s = None
+    # columns[0][1] could be "_count", which just does _count on columns[0][0]
+    # first aggregation
+    agg_s = inner(queries, compile=list(compile) + list(column), innermost=True)
+    # second level, this will be used for data columns
+    agg_s = inner(
+        [(None, agg_s)],
+        compile=(list(compile) + [column[0]]),
+        collect=[column[1]],
+        innermost=column[1] == "_count",
+    )
+    # final level, adds sorting
+    s = inner([(None, agg_s)], compile=compile, collect=column, sort=[])  # TODO sort
 
     if not sort or sort[0][0] == "_default":
         order = sort[0][1] if sort else "asc"
@@ -185,27 +223,15 @@ def add_aggregation(
     return s
 
 
-def get_total_row(agg_s: SQLQuery, compile):
-    total_q = agg_s
-    total_q._order_by = None
-    total_q._group_by = None
-    for _ in range(0, len(compile)):
-        total_q.selection.pop(1)
-
-    def c(total_res):
-        if len(total_res) != 1:
-            raise RuntimeError("There should only be 1 total row")
-
-        for i in range(1, len(compile) + 1):
-            total_res[0].insert(i, "SUM")
-
-    return total_q, c
-
-
 def run_searches(
-    config: Env, sql_queries: Iterable[SQLQuery], collection_fields: Iterable = ()
+    config: Env,
+    sql_queries: Iterable[SQLQuery],
+    request: CountRequest,
+    collection_fields: Iterable = (),
 ) -> Iterator[tuple[list[str], list[list[Any]]]]:
-    results, _ = run_paged_searches(config, sql_queries, paged=False, collection_fields=collection_fields)
+    results, _ = run_paged_searches(
+        config, sql_queries, paged=False, collection_fields=collection_fields, request=request
+    )
     for columns, result in results:
         yield columns, result
 
@@ -217,6 +243,7 @@ def run_paged_searches(
     _from: int = 0,
     paged=True,
     collection_fields: Iterable = (),
+    request: Request = Request(),
 ) -> tuple[Iterable[tuple[list[str], list[list[Any]]] | None], list[int]]:
     sql_queries = [s.to_string(paged=paged) for s in in_sql_queries]
 
@@ -266,29 +293,42 @@ def run_paged_searches(
             else:
                 sql_query = resource_query[0]
                 with get_cursor(config) as cursor:
-                    columns, result = fetchall(cursor, sql_query)
+                    result_columns, result = fetchall(cursor, sql_query)
                 new_result = []
                 for row in result:
                     new_row = []
-                    for i, column in enumerate(columns):
-                        if column == "entry_data":
+                    for i, column in enumerate(result_columns):
+                        if isinstance(request, CountRequest) and i > len(request.compile):
                             # for statistics, data shown but not used in compile are returned in a column
-                            # called "entry_data", in JSON format. in the JSON, list fields are represented as
-                            # \u001f separated values
-                            entries_data = json.loads(str(row[i]))
-                            if collection_fields:
-                                for entry_data in entries_data:
-                                    for json_field in collection_fields:
-                                        if json_field in entry_data:
-                                            entry_data[json_field] = (
-                                                entry_data[json_field].split("\u001f") if entry_data[json_field] else []
-                                            )
+                            # in JSON format. in the JSON, there are counts for each level and possibly values
+                            try:
+                                entries_data = json.loads(str(row[i]))
+                            except json.decoder.JSONDecodeError:
+                                raise UserError(
+                                    f"Unable to process data, probably due to too many values per row, using {','.join(['='.join(a) for a in request.columns])}"
+                                )
+                            for elem in entries_data:
+                                for key in elem:
+                                    if key not in [column, "count"]:
+                                        elem[key] = json.loads(str(elem[key]))
+                                        #  elem[key] is a list. Each element in elem[key] is
+                                        # an object with keys <field> and count, if <field> is a collection,
+                                        # the value must be separated
+                                        field = request.columns[1]
+                                        if field in collection_fields:
+                                            for x in elem[key]:
+                                                if x[field]:
+                                                    x[field] = x[field].split("\u001f")
+                                                else:
+                                                    x[field] = []
                             new_row.append(entries_data)
+                        elif column == "count":
+                            new_row.append(int(row[i]))
                         elif column in collection_fields:
                             new_row.append(row[i].split("\u001f") if row[i] else [])
                         else:
                             new_row.append(row[i])
                     new_result.append(new_row)
-                yield (columns, new_result)
+                yield (result_columns, new_result)
 
     return res(), count_res
