@@ -1,12 +1,13 @@
+import json
 from typing import Any, Sequence
-from fastapi import FastAPI, Depends, Query, Request
+from fastapi import FastAPI, Depends, Query, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from karps.config import Env, ConfigResponse, get_env, get_resource_config, get_resource_configs, load_config
 from karps.logging import setup_sql_logger
 from karps.search import count, search
-from karps.models import CountResult, SearchResult, UserErrorSchema
+from karps.models import SearchResult, UserErrorSchema
 from karps.errors import errors
 
 api_description = """
@@ -224,7 +225,7 @@ def do_count(
     ),
     columns: list[tuple[str, str]] = Depends(get_columns_param("columns")),
     sort: list[tuple[str, str]] = Depends(get_sort_param()),
-) -> CountResult:
+) -> Response:
     """
     From each provided resource, get the entries that match the query q. See http://ws.spraakbanken.gu.se/ws/karp/v7 for a description of the query language.
 
@@ -240,5 +241,6 @@ def do_count(
     main_config = load_config(env)
     resource_configs = [get_resource_config(env, resource) for resource in resources]
     headers, table = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns, sort=sort)
-    res = CountResult.model_construct(**{"headers": headers, "table": table})
-    return res
+    headers_dumped = [header.model_dump() for header in headers]
+    result_str = json.dumps({"headers": headers_dumped, "table": table}, ensure_ascii=False)
+    return Response(result_str, media_type="application/json")
