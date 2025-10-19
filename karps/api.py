@@ -240,7 +240,8 @@ def do_count(
     """
     main_config = load_config(env)
     resource_configs = [get_resource_config(env, resource) for resource in resources]
-    headers, table = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns, sort=sort)
+    headers, table, total = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns, sort=sort)
     headers_dumped = [header.model_dump() for header in headers]
-    result_str = json.dumps({"headers": headers_dumped, "table": table}, ensure_ascii=False)
+    # TODO fix response model for API-reference reasons
+    result_str = json.dumps({"headers": headers_dumped, "table": table, "total": total}, ensure_ascii=False)
     return Response(result_str, media_type="application/json")

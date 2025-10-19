@@ -116,7 +116,7 @@ def count(
     compile: Sequence[str] = (),
     columns: Iterable[tuple[str, str]] = (),
     sort: Sequence[tuple[str, str]] = (),
-) -> tuple[list[Header], list[list[object]]]:
+) -> tuple[list[Header], list[list[object]], list[object]]:
     compile = sorted(compile, key=alphanumeric_key)
     # sort columns by the "exploding" column
     columns = sorted(columns, key=lambda column: alphanumeric_key(column[0]))
@@ -126,17 +126,20 @@ def count(
     # add the column header for "total"
     final_headers.append(Header(type="total"))
 
+    query = parse_query(q)
     rows = []
     for column in columns:
-        model_headers = _count_subquery(main_config, env, resources, parse_query(q), compile, column, sort, rows)
+        model_headers = _count_subquery(main_config, env, resources, query, compile, column, sort, rows)
         # add the column headers for extra columns
         final_headers.extend(model_headers)
+    total_row = []
+    _count_subquery(main_config, env, resources, query, [], ("resource_id", "_count"), None, total_row)
 
-    return final_headers, rows
+    return final_headers, rows, ["-"] + total_row[0]
 
 
 def _count_subquery(main_config, env, resources, query, compile, column, sort, rows):
-    selection = compile + [column[0]] + ([column[1]] if column[1] != "_count" else [])
+    selection = compile + ([column[0]] + ([column[1]] if column[1] != "_count" else []) if column else [])
     ensure_fields_exist(resources, selection)
     configs, s = get_search(main_config, resources, query, selection=selection, sort=[])
     s2: Sequence[tuple[ResourceConfig, SQLQuery]] = list(zip(configs, s))
@@ -156,12 +159,12 @@ def _count_subquery(main_config, env, resources, query, compile, column, sort, r
     columns_headers = defaultdict(set)
 
     def handle_row(row):
-        entry_data = _make_column_data(row[-1], column, columns_headers)
+        if column:
+            entry_data = _make_column_data(row[-1], column, columns_headers)
+        else:
+            entry_data = {}
         # append total directly after compile columns
         return list(row[1:-1]) + [int(row[0])], entry_data
-
-    # TODO reenable total row
-    # handle_row([total_rows, total_row_columns], total_row=True)
 
     result = []
     for row in res:

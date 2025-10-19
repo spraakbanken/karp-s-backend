@@ -48,6 +48,7 @@ class ValueHeader(Header):
 class CountResult(BaseModel):
     headers: list[Header | ValueHeader]
     table: list[list[Scalar | list[Scalar] | list[list[Scalar]] | None]]
+    total: list[int | str]
 
 
 class UserErrorSchema(BaseModel):

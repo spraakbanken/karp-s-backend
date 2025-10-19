@@ -157,7 +157,6 @@ def add_aggregation(
         queries: Sequence[tuple[ResourceConfig | None, SQLQuery]],
         compile: Sequence[str],
         collect: Sequence[str] = [],
-        sort: Sequence[tuple[str, str]] = (),
         innermost=False,
     ) -> SQLQuery:
         """
@@ -167,7 +166,7 @@ def add_aggregation(
         TODO if compile field is collection, the json_field must be expanded to as many rows as there are in the fields, use JSON_TABLE
         each result column and the field to be presented in it must be included in the inner rows
         """
-        if compile[-1] == "_count":
+        if compile[-1] == "_count" if len(compile) > 0 else False:
             sel: list[tuple[str, str | None]] = []
         elif innermost:
             sel = [("COUNT(*)", "count")]
@@ -193,7 +192,7 @@ def add_aggregation(
                 )
 
         s = select(sel).from_inner_query(queries)
-        if compile[-1] != "_count":
+        if compile and compile[-1] != "_count":
             s.group_by(compile)
         return s
 
@@ -202,14 +201,15 @@ def add_aggregation(
     # first aggregation
     agg_s = inner(queries, compile=list(compile) + list(column), innermost=True)
     # second level, this will be used for data columns
-    agg_s = inner(
-        [(None, agg_s)],
-        compile=(list(compile) + [column[0]]),
-        collect=[column[1]],
-        innermost=column[1] == "_count",
-    )
+    if column:
+        agg_s = inner(
+            [(None, agg_s)],
+            compile=(list(compile) + [column[0]]),
+            collect=[column[1]],
+            innermost=column[1] == "_count",
+        )
     # final level, adds sorting
-    s = inner([(None, agg_s)], compile=compile, collect=column, sort=[])  # TODO sort
+    s = inner([(None, agg_s)], compile=compile, collect=column)
 
     if not sort or sort[0][0] == "_default":
         order = sort[0][1] if sort else "asc"
