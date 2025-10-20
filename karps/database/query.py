@@ -107,23 +107,17 @@ class SQLQuery:
                     qs = self.get_ctes(join)
                     ctes.append((join, qs))
 
-                # add needed CTE for inner queries
-                for _, inner_q in self.inner_queries:
-                    for join in inner_q.joins:
-                        qs = inner_q.get_ctes(join)
-                        ctes.append((join, qs))
-
-                    # add needed CTE for inner inner queries
-                    for _, inner_inner_q in inner_q.inner_queries:
-                        for join in inner_inner_q.joins:
-                            qs = inner_inner_q.get_ctes(join)
+                # add needed CTEs for inner queries recursively
+                def recurse(q):
+                    ctes = []
+                    for _, inner_q in q.inner_queries:
+                        for join in inner_q.joins:
+                            qs = inner_q.get_ctes(join)
                             ctes.append((join, qs))
+                        ctes.extend(recurse(inner_q))
+                    return ctes
 
-                        # add needed CTE for inner inner inner queries :)
-                        for _, inner_inner_inner_q in inner_inner_q.inner_queries:
-                            for join in inner_inner_inner_q.joins:
-                                qs = inner_inner_inner_q.get_ctes(join)
-                                ctes.append((join, qs))
+                ctes.extend(recurse(self))
 
                 for _, (where_cte, data_cte) in ctes:
                     # query on collection field
