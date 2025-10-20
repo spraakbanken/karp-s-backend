@@ -174,20 +174,23 @@ def add_aggregation(
             sel = [("SUM(count)", "count")]
         for c in compile:
             if c != "_count":
-                sel.append((c, None))
+                if (c, None) not in sel:
+                    sel.append((c, None))
         # TODO handle different sizes of collect
         for field in collect[0:1]:
             inner_fields = []
             if len(collect) > 1:
+                if len(collect) > 2:
+                    raise Exception()
                 for tmpfield in collect[1:]:
                     if tmpfield != "_count":
-                        inner_fields.append(f"'{tmpfield}', `{tmpfield}`")
+                        inner_fields.append(f"'{tmpfield}', `entry_data`")
             if field != "_count":
                 sel.append(
                     (
                         # TODO move all sql generation into karps.database.query
                         f"CONCAT('[', GROUP_CONCAT(JSON_OBJECT('{field}', `{field}`,'count', `count`{',' + ','.join(inner_fields) if inner_fields else ''})), ']')",
-                        f"`{field}`",
+                        "`entry_data`",
                     )
                 )
 
@@ -309,7 +312,7 @@ def run_paged_searches(
                                 )
                             for elem in entries_data:
                                 for key in elem:
-                                    if key not in [column, "count"]:
+                                    if key not in [request.columns[0], "count"]:
                                         elem[key] = json.loads(str(elem[key]))
                                         #  elem[key] is a list. Each element in elem[key] is
                                         # an object with keys <field> and count, if <field> is a collection,
