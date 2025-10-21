@@ -1,6 +1,6 @@
-# Karp-S
+# Karp-s
 
-Backend for Karp-S
+Backend for Karp-s
 
 ## Installation instructions
 

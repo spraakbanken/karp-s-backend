@@ -44,7 +44,7 @@ When sorting by multiple fields, the sort will be applied in the given order. `a
 
 
 app = FastAPI(
-    title="Karp-S API",
+    title="Karp-s API",
     summary="Exposes Språkbanken's lexical resources.",
     description=api_description,
     version="1.0-dev",
@@ -175,7 +175,7 @@ def get_q_param():
     return Query(
         None,
         title="Query",
-        description='The query. See http://ws.spraakbanken.gu.se/ws/karp/v7 for a description of the query language, however, Karp-S does not support nesting boolean queries, the "not"-boolean query, sub-queries, exists, missing and freetext.',
+        description='The query. See http://ws.spraakbanken.gu.se/ws/karp/v7 for a description of the query language, however, Karp-s does not support nesting boolean queries, the "not"-boolean query, sub-queries, exists, missing and freetext.',
     )
 
 
