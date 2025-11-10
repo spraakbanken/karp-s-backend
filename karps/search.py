@@ -184,18 +184,22 @@ def _count_subquery(main_config, env, resources, query, compile, column, sort, r
                 cell_content = entry_data.get((explode_field, explode_value, col_val))
                 if cell_content:
                     if column[1] == "_count":
-                        use_row.append(cell_content["count"])
+                        use_row.append({"count": cell_content["count"]})
                     else:
-                        values = [value[column[1]] for value in cell_content["values"]]
-                        # TODO alphanumeric_key does not support non-str values, including None
-                        # However, should there really be any None values here...
-                        # sorted_values = sorted(values, key=alphanumeric_key)
-                        use_row.append([value for value in values if value is not None])
+                        # TODO sort values
+                        use_row.append(
+                            {
+                                "count": cell_content["count"],
+                                "values": [
+                                    {"count": val["count"], "value": val[col_val]} for val in cell_content["values"]
+                                ],
+                            }
+                        )
                 else:
                     if column[1] == "_count":
-                        use_row.append(0)
+                        use_row.append({"count": 0})
                     else:
-                        use_row.append([])
+                        use_row.append({"count": 0, "values": []})
         if append_to_existing:
             # for the succeding requests, append columns data to preexisting rows
             rows[i].extend(use_row)

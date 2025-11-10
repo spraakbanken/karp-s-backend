@@ -45,10 +45,22 @@ class ValueHeader(Header):
     header_value: str  # when header_field is available
 
 
+class CountCellValue(BaseModel):
+    count: int
+    value: Scalar | list[Scalar]
+
+
+class CountCell(BaseModel):
+    count: int
+    values: list[CountCellValue] = []
+
+
 class CountResult(BaseModel):
     headers: list[Header | ValueHeader]
-    table: list[list[Scalar | list[Scalar] | list[list[Scalar]] | None]]
-    total: list[int | str]
+    # TODO can we make it clearer which value may appear where?
+    # table/total[0:len(compile)] == scalar | list[Scalar], table/total[len(compile)] == int (count column), table/total[len(compile) + 1:] == CountCell
+    table: list[list[Scalar | list[Scalar] | list[list[Scalar]] | CountCell | None]]
+    total: list[CountCell | int | str]
 
 
 class UserErrorSchema(BaseModel):
