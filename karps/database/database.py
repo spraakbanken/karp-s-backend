@@ -312,7 +312,7 @@ def run_paged_searches(
                                     entries_data = json.loads(str(row[i]))
                             except json.decoder.JSONDecodeError:
                                 raise UserError(
-                                    f"Unable to process data, probably due to too many values per row, using {','.join('='.join(request.columns))}"
+                                    f"Unable to process data, probably due to too many values per row, using {'='.join(request.columns)}"
                                 )
                             for elem in entries_data:
                                 for key in elem:
