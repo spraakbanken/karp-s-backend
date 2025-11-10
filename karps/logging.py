@@ -16,6 +16,9 @@ class JSONFormatter(logging.Formatter):
             # log true/false depending on if the logging call was made when an exception has occurred
             "error": bool(record.exc_info),
         }
+        warnings = getattr(record, "args")["warnings"]
+        if warnings:
+            payload["warnings"] = warnings
         return json.dumps(payload, ensure_ascii=False)
 
 

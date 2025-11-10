@@ -31,6 +31,7 @@ sql_logger = get_sql_logger()
 @contextmanager
 def get_cursor(config: Env) -> Iterator[MySQLCursor]:
     connection = get_connection(config)
+    connection.get_warnings = True
     cursor = None
     try:
         # When connection.cursor is called without arguments, a MySQLCursor-instance is returned
@@ -43,15 +44,19 @@ def get_cursor(config: Env) -> Iterator[MySQLCursor]:
         connection.close()
 
 
-def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
+def fetchall(cursor: MySQLCursor, sql: str) -> Iterator[tuple[list[str], list[tuple]]]:
     bf = time.time()
+    took = "-1"
     try:
         cursor.execute(sql)
-    finally:
         af = time.time()
-        sql_logger.info("", {"q": sql, "took": af - bf}, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]
-    columns = [desc[0] for desc in cursor.description or ()]
-    return columns, cursor.fetchall()
+        took = af - bf
+        columns = [desc[0] for desc in cursor.description or ()]
+        yield columns, cursor.fetchall()
+
+    finally:
+        warnings = cursor.warnings or ()
+        sql_logger.info("", {"q": sql, "took": took, "warnings": warnings}, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]
 
 
 def _check_sort_allowed(resource_config, sort):
@@ -255,7 +260,7 @@ def run_paged_searches(
     with get_cursor(config) as cursor:
         for _, count_query in sql_queries:
             if count_query:
-                _, count_result = fetchall(cursor, count_query)
+                _, count_result = next(fetchall(cursor, count_query))
                 count_res.append(count_result[0][0])
 
     # if the query uses paging, be must add the limits from user supplied _from and size
@@ -296,7 +301,7 @@ def run_paged_searches(
             else:
                 sql_query = resource_query[0]
                 with get_cursor(config) as cursor:
-                    result_columns, result = fetchall(cursor, sql_query)
+                    result_columns, result = next(fetchall(cursor, sql_query))
                 new_result = []
                 for row in result:
                     new_row = []
