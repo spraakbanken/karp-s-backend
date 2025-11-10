@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import cast
 import tatsu
 import tatsu.exceptions
 import importlib.resources
@@ -94,25 +95,27 @@ def get_query(main_config: MainConfig, word_column: str, outer_q: Query) -> tupl
             parts.append((field, f"`{db_field}` {op_arg}"))
             continue
         else:
+            # escape ' with a backslash, since we use ' for strings in MariaDB
+            val = cast(str, q.value).replace("'", "\\'")
             if q.op == "equals":
-                op_arg = f"= '{q.value}'"
+                op_arg = f"= '{val}'"
             elif q.op == "startswith":
-                op_arg = f"LIKE '{q.value}%'"
+                op_arg = f"LIKE '{val}%'"
             elif q.op == "endswith":
-                op_arg = f"LIKE '%{q.value}'"
+                op_arg = f"LIKE '%{val}'"
             elif q.op == "contains":
-                op_arg = f"LIKE '%{q.value}%'"
+                op_arg = f"LIKE '%{val}%'"
             elif q.op == "regexp":
-                op_arg = f"REGEXP '{q.value}'"
+                op_arg = f"REGEXP '{val}'"
             # TODO test these with integers
             elif q.op == "lt":
-                op_arg = f"< '{q.value}'"
+                op_arg = f"< '{val}'"
             elif q.op == "lte":
-                op_arg = f"<= '{q.value}'"
+                op_arg = f"<= '{val}'"
             elif q.op == "gt":
-                op_arg = f"> '{q.value}'"
+                op_arg = f"> '{val}'"
             elif q.op == "gte":
-                op_arg = f">= '{q.value}'"
+                op_arg = f">= '{val}'"
             else:
                 # this should not happen since the query parser would not accept other operators
                 raise errors.InternalError("unknown operator in query")
