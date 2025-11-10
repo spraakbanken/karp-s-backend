@@ -139,7 +139,7 @@ def count(
 
 
 def _count_subquery(main_config, env, resources, query, compile, column, sort, rows):
-    selection = compile + ([column[0]] + ([column[1]] if column[1] != "_count" else []) if column else [])
+    selection = set(compile + ([column[0]] + ([column[1]] if column[1] != "_count" else []) if column else []))
     ensure_fields_exist(resources, selection)
     configs, s = get_search(main_config, resources, query, selection=selection, sort=[])
     s2: Sequence[tuple[ResourceConfig, SQLQuery]] = list(zip(configs, s))
