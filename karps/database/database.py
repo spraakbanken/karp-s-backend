@@ -8,7 +8,7 @@ from mysql.connector.abstracts import MySQLConnectionAbstract
 from mysql.connector.cursor import MySQLCursor
 
 from karps.config import Env, MainConfig, ResourceConfig
-from karps.errors.errors import UserError
+from karps.errors.errors import GroupConcatError, UserError
 from karps.logging import get_sql_logger
 from karps.models import CountRequest, Request
 from karps.query.query import Query, get_query
@@ -60,7 +60,7 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
         # if group_concat_max_len was exceeded, raise error immediately
         for warning in warnings:
             if 1260 == warning[1]:
-                raise UserError("too many rows per cell (group_concat_max_len was exceeded)")
+                raise GroupConcatError()
         return columns, rows
     finally:
         sql_logger.info("", {"q": sql, "took": took, "warnings": warnings}, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]

@@ -61,10 +61,18 @@ app.add_middleware(
 
 
 @app.exception_handler(errors.UserError)
-async def unicorn_exception_handler(request: Request, exc: errors.UserError):
+async def exception_handler(request: Request, exc: errors.UserError):
     return JSONResponse(
         status_code=500,
         content={"message": str(exc)},
+    )
+
+
+@app.exception_handler(errors.CodeUserError)
+async def exception_handler2(request: Request, exc: errors.CodeUserError):
+    return JSONResponse(
+        status_code=500,
+        content={"message": exc.msg, "code": exc.code},
     )
 
 

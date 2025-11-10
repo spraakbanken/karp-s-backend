@@ -53,6 +53,7 @@ class CountResult(BaseModel):
 
 class UserErrorSchema(BaseModel):
     message: str
+    code: int | None = None
 
 
 @dataclass
