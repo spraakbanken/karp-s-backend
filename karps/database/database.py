@@ -6,7 +6,6 @@ from typing import Any, Iterable, Iterator, Sequence, cast
 import mysql.connector
 from mysql.connector.abstracts import MySQLConnectionAbstract
 from mysql.connector.cursor import MySQLCursor
-from mysql.connector.pooling import PooledMySQLConnection
 
 from karps.config import Env, MainConfig, ResourceConfig
 from karps.errors.errors import UserError
@@ -16,13 +15,15 @@ from karps.query.query import Query, get_query
 from karps.database.query import SQLQuery, select
 
 
-def get_connection(config: Env) -> PooledMySQLConnection | MySQLConnectionAbstract:
-    return mysql.connector.connect(
+def get_connection(config: Env) -> MySQLConnectionAbstract:
+    connection = mysql.connector.connect(
         host=config.host,
         user=config.user,
         password=config.password,
         database=config.database,
     )
+    # we don't use pooling and casting improves type checking
+    return cast(MySQLConnectionAbstract, connection)
 
 
 sql_logger = get_sql_logger()
