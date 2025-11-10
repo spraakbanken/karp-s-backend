@@ -171,7 +171,7 @@ def add_aggregation(
         elif innermost:
             sel = [("COUNT(*)", "count")]
         else:
-            sel = [("SUM(count)", "count")]
+            sel = [("IFNULL(SUM(count), 0)", "count")]
         for c in compile:
             if c != "_count":
                 if (c, None) not in sel:
@@ -305,10 +305,14 @@ def run_paged_searches(
                             # for statistics, data shown but not used in compile are returned in a column
                             # in JSON format. in the JSON, there are counts for each level and possibly values
                             try:
-                                entries_data = json.loads(str(row[i]))
+                                if row[i] is None:
+                                    # this can happen if there are zero hits
+                                    entries_data = []
+                                else:
+                                    entries_data = json.loads(str(row[i]))
                             except json.decoder.JSONDecodeError:
                                 raise UserError(
-                                    f"Unable to process data, probably due to too many values per row, using {','.join(['='.join(a) for a in request.columns])}"
+                                    f"Unable to process data, probably due to too many values per row, using {','.join('='.join(request.columns))}"
                                 )
                             for elem in entries_data:
                                 for key in elem:

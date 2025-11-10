@@ -143,6 +143,7 @@ class SQLQuery:
                         or value[0:5] == "COUNT"
                         or value[0:6] == "CONCAT"
                         or value[0:3] == "SUM"
+                        or value[0:6] == "IFNULL"
                     ):
                         v = value
                     else:
