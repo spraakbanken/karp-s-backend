@@ -45,18 +45,24 @@ def get_cursor(config: Env) -> Iterator[MySQLCursor]:
         connection.close()
 
 
-def fetchall(cursor: MySQLCursor, sql: str) -> Iterator[tuple[list[str], list[tuple]]]:
+def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
     bf = time.time()
     took = "-1"
+    warnings = ()
     try:
         cursor.execute(sql)
         af = time.time()
         took = af - bf
         columns = [desc[0] for desc in cursor.description or ()]
-        yield columns, cursor.fetchall()
-
-    finally:
+        rows = cursor.fetchall()
         warnings = cursor.warnings or ()
+
+        # if group_concat_max_len was exceeded, raise error immediately
+        for warning in warnings:
+            if 1260 == warning[1]:
+                raise UserError("too many rows per cell (group_concat_max_len was exceeded)")
+        return columns, rows
+    finally:
         sql_logger.info("", {"q": sql, "took": took, "warnings": warnings}, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]
 
 
@@ -261,7 +267,7 @@ def run_paged_searches(
     with get_cursor(config) as cursor:
         for _, count_query in sql_queries:
             if count_query:
-                _, count_result = next(fetchall(cursor, count_query))
+                _, count_result = fetchall(cursor, count_query)
                 count_res.append(count_result[0][0])
 
     # if the query uses paging, be must add the limits from user supplied _from and size
@@ -302,7 +308,7 @@ def run_paged_searches(
             else:
                 sql_query = resource_query[0]
                 with get_cursor(config) as cursor:
-                    result_columns, result = next(fetchall(cursor, sql_query))
+                    result_columns, result = fetchall(cursor, sql_query)
                 new_result = []
                 for row in result:
                     new_row = []
@@ -310,16 +316,11 @@ def run_paged_searches(
                         if isinstance(request, CountRequest) and i > len(request.compile):
                             # for statistics, data shown but not used in compile are returned in a column
                             # in JSON format. in the JSON, there are counts for each level and possibly values
-                            try:
-                                if row[i] is None:
-                                    # this can happen if there are zero hits
-                                    entries_data = []
-                                else:
-                                    entries_data = json.loads(str(row[i]))
-                            except json.decoder.JSONDecodeError:
-                                raise UserError(
-                                    f"Unable to process data, probably due to too many values per row, using {'='.join(request.columns)}"
-                                )
+                            if row[i] is None:
+                                # this can happen if there are zero hits
+                                entries_data = []
+                            else:
+                                entries_data = json.loads(str(row[i]))
                             for elem in entries_data:
                                 for key in elem:
                                     if key not in [request.columns[0], "count"]:
