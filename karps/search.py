@@ -180,7 +180,7 @@ def _count_subquery(main_config, env, resources, query, compile, column, sort, r
         else:
             use_row = row
         for (explode_field, col_val), explode_values in columns_headers.items():
-            for explode_value in explode_values:
+            for explode_value in sorted(explode_values, key=alphanumeric_key):
                 cell_content = entry_data.get((explode_field, explode_value, col_val))
                 if cell_content:
                     if column[1] == "_count":
