@@ -71,7 +71,7 @@ def _check_sort_allowed(resource_config, sort):
     Raise if any field name used in sort is not available in the given resource
     """
     for field, _ in sort:
-        if field not in resource_config.fields:
+        if field not in resource_config.field_names:
             raise UserError(f'Sort by "{field}" is not supported in "{resource_config.resource_id}"')
 
 
@@ -82,7 +82,7 @@ def _get_data_selection(resource_config: ResourceConfig, selection: Iterable[str
     """
     sel: list[tuple[str, str | None]] | None = None
     if "*" in selection:
-        sel = [(field, None) for field in resource_config.fields]
+        sel = [(field.name, None) for field in resource_config.fields]
     else:
         # don't send in resource_id here since it is not actually a column
         sel = [(col, None) for col in selection if col not in ["resource_id", "entry_word"]]
@@ -120,14 +120,14 @@ def get_search(
 
         ignore_resource = False
         for field, _ in parts:
-            if field not in resource_config.fields:
+            if field not in resource_config.field_names:
                 # if a query is posed with a field that is not supported in the resource, ignore the resource
                 ignore_resource = True
                 break
         if ignore_resource:
             continue
 
-        for field in resource_config.fields:
+        for field in resource_config.field_names:
             if parts:
                 sql_q.op(bool_op)
             # only join tables that are used in selection

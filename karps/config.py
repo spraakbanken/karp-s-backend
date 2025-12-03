@@ -57,11 +57,16 @@ class EntryWord(BaseModel):
     description: MultiLang
 
 
+class ResourceField(BaseModel):
+    name: str
+    primary: bool
+
+
 class ResourceConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     resource_id: str
-    fields: list[str]
+    fields: list[ResourceField]
     label: MultiLang
     description: MultiLang | None = None
     entry_word: EntryWord
@@ -69,6 +74,10 @@ class ResourceConfig(BaseModel):
     size: int
     link: str
     tags: list[str] | None = None
+
+    @property
+    def field_names(self):
+        return [resource_field.name for resource_field in self.fields]
 
 
 class Tag(BaseModel):
@@ -131,8 +140,8 @@ def format_hit(
     field_lookup = main_config.fields
 
     def fmt():
-        for field_name, val in zip(resource_config.fields, hit):
-            field = field_lookup[field_name]
+        for resource_field, val in zip(resource_config.fields, hit):
+            field = field_lookup[resource_field.name]
             yield field.name, val
 
     return dict(fmt())
@@ -141,14 +150,14 @@ def format_hit(
 def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
     for resource in resources:
         for field in fields:
-            if field not in ("resource_id", "entry_word") and field not in resource.fields:
+            if field not in ("resource_id", "entry_word") and field not in resource.field_names:
                 raise errors.UserError(f"{field} does not exist in {resource.resource_id}")
 
 
 def get_collection_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> Iterable[str]:
     fields: set[str] = set()
     for resource in resources:
-        for field in resource.fields:
-            if main_config.fields[field].collection:
-                fields.add(field)
+        for resource_field in resource.fields:
+            if main_config.fields[resource_field.name].collection:
+                fields.add(resource_field.name)
     return fields

@@ -1,6 +1,6 @@
 import itertools
 
-from karps.config import EntryWord, Field, MainConfig, MultiLang, ResourceConfig
+from karps.config import EntryWord, Field, MainConfig, MultiLang, ResourceConfig, ResourceField
 from karps.database.database import add_aggregation, get_search
 from karps.query.query import Query, parse_query
 
@@ -29,7 +29,7 @@ def create_resource_config(idx):
     return ResourceConfig(
         resource_id=f"r{idx}",
         label=MultiLang("r"),
-        fields=[data_field, "data3", "col1", "col2"],
+        fields=[ResourceField(name=field, primary=True) for field in [data_field, "data3", "col1", "col2"]],
         entry_word=EntryWord(field=data_field, description=MultiLang(data_field)),
         updated=0,
         size=0,
