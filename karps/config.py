@@ -6,7 +6,7 @@ import environs
 import glob
 
 from karps.errors import errors
-from pydantic import ConfigDict, RootModel
+from pydantic import ConfigDict, RootModel, Field as PydanticField
 import yaml
 
 from karps.models import BaseModel
@@ -42,10 +42,14 @@ class MultiLang(RootModel[str | dict[str, str]]): ...
 
 
 class Field(BaseModel):
-    name: str
-    type: str
-    collection: Optional[bool] = False
-    label: MultiLang | None = None
+    name: str = PydanticField(
+        ..., description="(Machine) name of the field. This name is used by resources to list the available fields."
+    )
+    type: str = PydanticField(..., description="Type of the field, can be text, integer or float.")
+    collection: Optional[bool] = PydanticField(default=False, description="If `true`, the field is a list of `type`.")
+    label: MultiLang | None = PydanticField(
+        default=None, description="Label for the field, can be in mulitple languages."
+    )
 
     def model_post_init(self, _):
         if self.label is None:
@@ -58,22 +62,34 @@ class EntryWord(BaseModel):
 
 
 class ResourceField(BaseModel):
-    name: str
-    primary: bool
+    name: str = PydanticField(
+        ..., description="The name of the field. Corresponds to a key under the top-level `fields`."
+    )
+    primary: bool = PydanticField(
+        ..., description="Fields with `primary: true` are more relevant than fields with `primary: false`."
+    )
 
 
 class ResourceConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    resource_id: str
-    fields: list[ResourceField]
-    label: MultiLang
-    description: MultiLang | None = None
-    entry_word: EntryWord
-    updated: int
-    size: int
-    link: str
-    tags: list[str] | None = None
+    resource_id: str = PydanticField(..., description="The resource ID")
+    fields: list[ResourceField] = PydanticField(..., description="The fields available in this resource.")
+    label: MultiLang = PydanticField(..., description="Name for this resource, can be in mulitple languages.")
+    description: MultiLang | None = PydanticField(
+        default=None, description="Description of this resource, can be in mulitple languages."
+    )
+    entry_word: EntryWord = PydanticField(..., description="The default field for this resource.")
+    updated: int = PydanticField(
+        ...,
+        description="The timestamp for when this resource was last updated (data or configuration). UNIX timestmap in milliseconds.",
+    )
+    size: int = PydanticField(..., description="The number of entries in this resource.")
+    link: str = PydanticField(..., description="A link to a relevant page for the resource.")
+    tags: list[str] | None = PydanticField(
+        default=None,
+        description="The tags for this resource, see top-level `tags`, for tag labels and description.",
+    )
 
     @property
     def field_names(self):
@@ -86,9 +102,11 @@ class Tag(BaseModel):
 
 
 class ConfigResponse(BaseModel):
-    resources: list[ResourceConfig]
-    tags: dict[str, Tag]
-    fields: dict[str, Field]
+    resources: list[ResourceConfig] = PydanticField(..., description="All resources available in this instance.")
+    tags: dict[str, Tag] = PydanticField(
+        ..., description='All tags available in this instance. Will be used by some of the resources under "resources".'
+    )
+    fields: dict[str, Field] = PydanticField(..., description="All fields available in this instance.")
 
 
 class MainConfig(BaseModel):
