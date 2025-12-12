@@ -151,6 +151,11 @@ def get_search(
                 # use the resource's default field
                 sql_q.order_by([(resource_config.entry_word.field, order)])
             else:
+                # update any use of entryWord to the actual field
+                sort = [
+                    (resource_config.entry_word.field if field in ["entryWord", "entry_word"] else field, order)
+                    for (field, order) in sort
+                ]
                 # check that the sort fields are available in resource
                 _check_sort_allowed(resource_config, sort)
                 sql_q.order_by(sort)
