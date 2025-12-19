@@ -46,15 +46,17 @@ def get_cursor(config: Env) -> Iterator[MySQLCursor]:
 
 
 def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
-    bf = time.time()
-    took = "-1"
+    execute_took = "-1"
+    fetchall_took = "-1"
     warnings = ()
     try:
+        bf = time.time()
         cursor.execute(sql)
-        af = time.time()
-        took = af - bf
+        execute_took = time.time() - bf
         columns = [desc[0] for desc in cursor.description or ()]
+        bf = time.time()
         rows = cursor.fetchall()
+        fetchall_took = time.time() - bf
         warnings = cursor.warnings or ()
 
         # if group_concat_max_len was exceeded, raise error immediately
@@ -63,7 +65,11 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
                 raise GroupConcatError()
         return columns, rows
     finally:
-        sql_logger.info("", {"q": sql, "took": took, "warnings": warnings}, exc_info=sys.exc_info()[0])  # pyright: ignore[reportArgumentType]
+        sql_logger.info(
+            "",
+            {"q": sql, "execute_took": execute_took, "fetchall_took": fetchall_took, "warnings": warnings},
+            exc_info=sys.exc_info()[0],  # pyright: ignore[reportArgumentType]
+        )
 
 
 def _check_sort_allowed(resource_config, sort):
