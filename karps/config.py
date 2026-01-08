@@ -131,7 +131,8 @@ def get_resource_configs(config: Env, resource_id: str | None = None) -> Iterato
         glob_pattern = f"{resource_id}.yaml"
     else:
         glob_pattern = "*"
-    for resource in glob.glob(os.path.join(config.base_path, f"config/resources/{glob_pattern}")):
+    # TODO use same sort as in search
+    for resource in sorted(glob.glob(os.path.join(config.base_path, f"config/resources/{glob_pattern}"))):
         with open_local(config, resource) as fp:
             yield ResourceConfig(**yaml.safe_load(fp))
 
