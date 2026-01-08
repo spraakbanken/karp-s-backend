@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Annotated, Sequence
+
 import pydantic
 
 
@@ -59,7 +60,7 @@ class CountResult(BaseModel):
     headers: list[Header | ValueHeader]
     # TODO can we make it clearer which value may appear where?
     # table/total[0:len(compile)] == scalar | list[Scalar], table/total[len(compile)] == int (count column), table/total[len(compile) + 1:] == CountCell
-    table: list[list[Scalar | list[Scalar] | list[list[Scalar]] | CountCell | None]]
+    table: Annotated[list[list[Scalar | list[Scalar] | list[list[Scalar]] | CountCell | None]], pydantic.FailFast()]
     total: list[CountCell | int | str]
 
 
