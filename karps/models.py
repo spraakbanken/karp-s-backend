@@ -48,7 +48,7 @@ class ValueHeader(Header):
 
 class CountCellValue(BaseModel):
     count: int
-    value: Scalar | list[Scalar]
+    value: Scalar | list[Scalar] | None
 
 
 class CountCell(BaseModel):
