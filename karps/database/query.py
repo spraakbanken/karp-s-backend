@@ -3,6 +3,10 @@ from typing import Sequence
 from karps.config import ResourceConfig
 
 
+ELEMENT_SEPARATOR = "\u001f"
+FIELD_SEPARATOR = "\u001e"
+
+
 class SQLQuery:
     def __init__(self, selection: Sequence[tuple[str, str]]):
         # tuple pair represents value (1) AS alias (2)
@@ -31,12 +35,14 @@ class SQLQuery:
         self.inner_queries = queries
         return self
 
-    def join(self, field, alias=None, where: str | None = None):
+    def join(self, field, alias=None, where: str | None = None, field_names: list[str] | None = None):
         """
         field must be in a table with two columns, __parent_id and value
         a CTE and a join (LEFT or INNER, depending on if there is a query on <field>)
         """
-        self.joins[field] = (alias, where)
+        if not field_names:
+            field_names = [field]
+        self.joins[field] = (alias, where, field_names)
         return self
 
     def group_by(self, fields: Sequence[str]):
@@ -79,10 +85,22 @@ class SQLQuery:
                 + ")"
             )
 
+        if len(self.joins[join][2]) > 1:
+            concat_ws = f"CONCAT_WS('{FIELD_SEPARATOR}', {','.join([f'`{inner_field_name}`' for inner_field_name in self.joins[join][2]])})"
+        else:
+            concat_ws = self.joins[join][2][0]
         data_cte = (
             f"{join}__data AS ("
             + (
-                select([("__parent_id", None), ("GROUP_CONCAT(value SEPARATOR '\u001f')", self.joins[join][0] or join)])
+                select(
+                    [
+                        ("__parent_id", None),
+                        (
+                            f"GROUP_CONCAT({concat_ws} ORDER BY __parent_id SEPARATOR '{ELEMENT_SEPARATOR}')",
+                            self.joins[join][0] or join,
+                        ),
+                    ]
+                )
                 .from_table(f"{self.table}__{join}")
                 .group_by(["__parent_id"])
                 .to_string()[0]
@@ -174,7 +192,7 @@ class SQLQuery:
                 #     qs = inner_q.get_ctes(join)
                 #     ctes.append((join, qs))
 
-                table_prefix = f"{self.table}." if self.table else ""
+                table_prefix = f"`{self.table}`." if self.table else ""
                 for join_field in self.joins:
                     # use alias or field name
                     name = self.joins[join_field][0] or join_field

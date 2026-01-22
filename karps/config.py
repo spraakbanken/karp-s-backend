@@ -42,13 +42,17 @@ class MultiLang(RootModel[str | dict[str, str]]): ...
 
 
 class Field(BaseModel):
+    # model_config = ConfigDict(extra="forbid")
     name: str = PydanticField(
         ..., description="(Machine) name of the field. This name is used by resources to list the available fields."
     )
-    type: str = PydanticField(..., description="Type of the field, can be text, integer or float.")
+    type: str = PydanticField(..., description="Type of the field, can be text, integer or float or table.")
     collection: Optional[bool] = PydanticField(default=False, description="If `true`, the field is a list of `type`.")
     label: MultiLang | None = PydanticField(
         default=None, description="Label for the field, can be in mulitple languages."
+    )
+    fields: dict[str, "Field"] = PydanticField(
+        default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
     )
 
     def model_post_init(self, _):
@@ -179,4 +183,19 @@ def get_collection_fields(main_config: MainConfig, resources: list[ResourceConfi
         for resource_field in resource.fields:
             if main_config.fields[resource_field.name].collection:
                 fields.add(resource_field.name)
+    return fields
+
+
+def get_table_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> dict[str, list[str]]:
+    fields: dict[str, list[str]] = {}
+    for resource in resources:
+        for resource_field in resource.fields:
+            field = main_config.fields[resource_field.name]
+            if field.type == "table":
+                if resource_field.name in fields:
+                    raise errors.UserError(
+                        f"{field} has different sub-fields in selected resources ({field.fields.keys()} vs. {fields[resource_field.name]})"
+                    )
+                else:
+                    fields[resource_field.name] = list(field.fields.keys())
     return fields

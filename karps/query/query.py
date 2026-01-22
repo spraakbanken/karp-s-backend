@@ -75,9 +75,6 @@ def get_query(main_config: MainConfig, word_column: str, outer_q: Query) -> tupl
             field = q.field
         field_type: str = main_config.fields[field].type
 
-        # collections are stored in sepearate tables where the column name is always value
-        db_field = "value" if main_config.fields[field].collection else field
-
         if field_type == "float" or field_type == "integer":
             if q.op == "equals":
                 parts.append((field, f"ABS(`{field}` - {q.value}) < {get_epsilon(q.value)}"))
@@ -92,7 +89,7 @@ def get_query(main_config: MainConfig, word_column: str, outer_q: Query) -> tupl
                 op_arg = f">= {q.value} - {get_epsilon(q.value)}"
             else:
                 raise errors.UserError("unsupported operator for numeric values")
-            parts.append((field, f"`{db_field}` {op_arg}"))
+            parts.append((field, f"`{field}` {op_arg}"))
             continue
         else:
             # escape ' with a backslash, since we use ' for strings in MariaDB
@@ -119,5 +116,5 @@ def get_query(main_config: MainConfig, word_column: str, outer_q: Query) -> tupl
             else:
                 # this should not happen since the query parser would not accept other operators
                 raise errors.InternalError("unknown operator in query")
-        parts.append((field, f"`{db_field}` {op_arg}"))
+        parts.append((field, f"`{field}` {op_arg}"))
     return outer_q.op, parts

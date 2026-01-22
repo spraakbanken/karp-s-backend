@@ -12,7 +12,7 @@ from karps.errors.errors import GroupConcatError, UserError
 from karps.logging import get_sql_logger
 from karps.models import CountRequest, Request
 from karps.query.query import Query, get_query
-from karps.database.query import SQLQuery, select
+from karps.database.query import ELEMENT_SEPARATOR, FIELD_SEPARATOR, SQLQuery, select
 
 
 def get_connection(config: Env) -> MySQLConnectionAbstract:
@@ -139,14 +139,18 @@ def get_search(
             # only join tables that are used in selection
             # TODO must also add joins that are used in queries
             if fields[field].collection:
-                where_kwarg = {}
+                where_kwarg: dict[str, Any] = {}
                 for where_field, where in parts:
                     if where and where_field == field:
-                        # add where clause to inner/cte/join-query, always called "value"
+                        # add where clause to inner/cte/join-query
                         where_kwarg = {"where": where}
                 if field in [s[0] for s in sel] or where_kwarg:
+                    if fields[field].type == "table":
+                        where_kwarg["field_names"] = list(fields[field].fields.keys())
                     aliases = [alias for col, alias in sel if col == field]
-                    sql_q.join(field, **where_kwarg, alias=aliases[0] if aliases else None)
+                    if aliases:
+                        where_kwarg["alias"] = aliases[0]
+                    sql_q.join(field, **where_kwarg)
             for where_field, where in parts:
                 if where and where_field and where_field == field and not fields[where_field].collection:
                     # add where clause to outer query
@@ -254,9 +258,15 @@ def run_searches(
     sql_queries: Iterable[SQLQuery],
     request: CountRequest,
     collection_fields: Iterable = (),
+    table_fields: dict[str, list[str]] = {},  # TODO default val
 ) -> Iterator[tuple[list[str], list[list[Any]]]]:
     results, _ = run_paged_searches(
-        config, sql_queries, paged=False, collection_fields=collection_fields, request=request
+        config,
+        sql_queries,
+        paged=False,
+        collection_fields=collection_fields,
+        table_fields=table_fields,
+        request=request,
     )
     for columns, result in results:
         yield columns, result
@@ -269,6 +279,7 @@ def run_paged_searches(
     _from: int = 0,
     paged=True,
     collection_fields: Iterable = (),
+    table_fields: dict[str, list[str]] = {},  # TODO default val
     request: Request = Request(),
 ) -> tuple[Iterable[tuple[list[str], list[list[Any]]] | None], list[int]]:
     sql_queries = [s.to_string(paged=paged) for s in in_sql_queries]
@@ -310,6 +321,12 @@ def run_paged_searches(
     else:
         sql_queries_updated = sql_queries
 
+    def create_table_rows(keys: Iterable[str], vals: list[str]):
+        """
+        This takes a list of values to turn into objects for tables rows when field.type == "table"
+        """
+        return [dict(zip(keys, val.split(FIELD_SEPARATOR))) for val in vals]
+
     def res():
         # a generator to avoid fetching any data we do not need
         for resource_query in sql_queries_updated:
@@ -343,14 +360,22 @@ def run_paged_searches(
                                         if field in collection_fields:
                                             for x in elem[key]:
                                                 if x[field]:
-                                                    x[field] = x[field].split("\u001f")
+                                                    vals = x[field].split(ELEMENT_SEPARATOR)
+                                                    if field in table_fields:
+                                                        x[field] = create_table_rows(table_fields[field], vals)
+                                                    else:
+                                                        x[field] = vals
                                                 else:
                                                     x[field] = []
                             new_row.append(entries_data)
                         elif column == "count":
                             new_row.append(int(row[i]))
                         elif column in collection_fields:
-                            new_row.append(row[i].split("\u001f") if row[i] else [])
+                            vals = row[i].split(ELEMENT_SEPARATOR) if row[i] else []
+                            if column in table_fields:
+                                new_row.append(create_table_rows(table_fields[column], vals))
+                            else:
+                                new_row.append(vals)
                         else:
                             new_row.append(row[i])
                     new_result.append(new_row)
