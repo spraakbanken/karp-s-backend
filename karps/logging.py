@@ -3,6 +3,7 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+from pathlib import Path
 
 
 class JSONFormatter(logging.Formatter):
@@ -24,6 +25,7 @@ class JSONFormatter(logging.Formatter):
 
 
 def setup_sql_logger(logging_dir: str):
+    Path(logging_dir).mkdir(exist_ok=True)
     logger = logging.getLogger("sql")
     logger.propagate = False
     logger.setLevel("INFO")
