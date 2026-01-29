@@ -42,7 +42,7 @@ class MultiLang(RootModel[str | dict[str, str]]): ...
 
 
 class Field(BaseModel):
-    # model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid")
     name: str = PydanticField(
         ..., description="(Machine) name of the field. This name is used by resources to list the available fields."
     )
@@ -53,6 +53,9 @@ class Field(BaseModel):
     )
     fields: dict[str, "Field"] = PydanticField(
         default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
+    )
+    resource_id: list[str] = PydanticField(
+        default_factory=list, description="The resources that this field is available in."
     )
 
     def model_post_init(self, _):
