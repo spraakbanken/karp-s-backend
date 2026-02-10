@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from typing import Annotated, Sequence
+from typing import Annotated, Any, Sequence
 
 import pydantic
+
+from karps.errors import errors
 
 
 def to_lower_camel(s: str) -> str:
@@ -65,8 +67,16 @@ class CountResult(BaseModel):
 
 
 class UserErrorSchema(BaseModel):
-    message: str
-    code: int | None = None
+    message: str = pydantic.Field(..., title="")
+    code: int | None = pydantic.Field(
+        None,
+        title="",
+        description="### Code definitions\n\n"
+        + "\n\n".join([f"{error_code.code}: {error_code.description}" for error_code in errors.error_codes.values()]),
+    )
+    extra: dict[str, Any] | None = pydantic.Field(
+        None, title="", description="Some errors have data output in addition to the human readable message."
+    )
 
 
 @dataclass

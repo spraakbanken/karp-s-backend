@@ -4,11 +4,20 @@ from fastapi import FastAPI, Depends, Query, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from karps.config import Env, ConfigResponse, get_env, get_resource_config, get_resource_configs, load_config
+from karps.config import (
+    Env,
+    ConfigResponse,
+    ResourceConfig,
+    get_env,
+    get_resource_config,
+    get_resource_configs,
+    load_config,
+)
 from karps.logging import setup_sql_logger
 from karps.search import count, search
 from karps.models import SearchResult, UserErrorSchema
 from karps.errors import errors
+from karps.auth.deps import get_allowed_resources
 
 api_description = """
 Språkbanken has many lexical resources, listed on our [webpage](https://spraakbanken.gu.se/resurser/lexicon).
@@ -70,9 +79,12 @@ async def exception_handler(request: Request, exc: errors.UserError):
 
 @app.exception_handler(errors.CodeUserError)
 async def exception_handler2(request: Request, exc: errors.CodeUserError):
+    content = {"message": exc.msg, "code": exc.code}
+    if exc.details:
+        content["details"] = exc.details
     return JSONResponse(
         status_code=500,
-        content={"message": exc.msg, "code": exc.code},
+        content=content,
     )
 
 
@@ -190,8 +202,22 @@ def get_q_param():
 default_500: dict[int | str, dict[str, Any]] = {500: {"description": "Application error", "model": UserErrorSchema}}
 
 
-def get_resources_param():
-    return get_list_param(alias="resources", title="Resources", description=resources_param_description)
+def get_resource_configs_param():
+    def inner(
+        allowed_resources: list[str] = Depends(get_allowed_resources),
+        resources: list[str] = Depends(
+            get_list_param(alias="resources", title="Resources", description=resources_param_description)
+        ),
+    ) -> list[ResourceConfig]:
+        resource_configs = []
+        for resource in resources:
+            resource_config = get_resource_config(env, resource)
+            if resource_config.limited_access and resource_config.resource_id not in allowed_resources:
+                raise errors.UserAccessError(resource_config.resource_id)
+            resource_configs.append(resource_config)
+        return resource_configs
+
+    return inner
 
 
 @app.get("/config", summary="Get config", response_model_exclude_unset=True)
@@ -205,7 +231,7 @@ def get_config() -> ConfigResponse:
 
 @app.get("/search", summary="Search", responses=default_500)
 def do_search(
-    resources: list[str] = Depends(get_resources_param()),
+    resource_configs: list[ResourceConfig] = Depends(get_resource_configs_param()),
     q: str | None = get_q_param(),
     size: int = 10,
     _from: int = Query(0, alias="from"),
@@ -220,13 +246,12 @@ def do_search(
     The sort is done within each resource, the results from each resource are not mixed.
     """
     main_config = load_config(env)
-    resource_configs = [get_resource_config(env, resource) for resource in resources]
     return search(env, main_config, resource_configs, q=q, size=size, _from=_from, sort=sort)
 
 
 @app.get("/count", summary="Count", response_model_exclude_none=True, responses=default_500)
 def do_count(
-    resources: list[str] = Depends(get_resources_param()),
+    resource_configs: list[ResourceConfig] = Depends(get_resource_configs_param()),
     q: str | None = get_q_param(),
     compile: list[str] = Depends(
         get_list_param(alias="compile", title="Compile on", description=compile_param_description)
@@ -247,7 +272,6 @@ def do_count(
     (**ascending** order) (they themselves sorted alphabetically, just like the columns).
     """
     main_config = load_config(env)
-    resource_configs = [get_resource_config(env, resource) for resource in resources]
     headers, table, total = count(env, main_config, resource_configs, q=q, compile=compile, columns=columns, sort=sort)
     headers_dumped = [header.model_dump(by_alias=True) for header in headers]
     # TODO fix response model for API-reference reasons

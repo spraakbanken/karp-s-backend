@@ -1,9 +1,12 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
+import functools
 import os
-from typing import Iterable, Iterator, Optional
+from pathlib import Path
+from typing import Any, Iterable, Iterator, Optional
 import environs
 import glob
+
 
 from karps.errors import errors
 from pydantic import ConfigDict, RootModel, Field as PydanticField
@@ -21,21 +24,35 @@ class Env:
     base_path: str = ""
     logging_dir: str = ""
     sql_query_logging: bool = False
+    auth_jwt_pubkey_path: Path | None = None
+    sbauth_url: str | None = None
+    sbauth_api_key: str | None = None
 
 
+@functools.cache
 def get_env() -> Env:
     env = environs.Env()
     env.read_env()
 
-    return Env(
-        host=env.str("DB_HOST"),
-        user=env.str("DB_USER"),
-        password=env.str("DB_PASSWORD"),
-        database=env.str("DB_DATABASE"),
-        base_path=env.str("BASE_PATH", ""),
-        logging_dir=env.str("LOGGING_DIR", ""),
-        sql_query_logging=env.bool("SQL_QUERY_LOGGING", False),
-    )
+    kwargs: dict[str, Any] = {
+        "host": env.str("DB_HOST"),
+        "user": env.str("DB_USER"),
+        "password": env.str("DB_PASSWORD"),
+        "database": env.str("DB_DATABASE"),
+    }
+
+    def _set_if_present(kwargs, var_name, parser):
+        if var_name in os.environ:
+            kwargs[var_name.lower()] = parser(var_name)
+
+    _set_if_present(kwargs, "BASE_PATH", env.str)
+    _set_if_present(kwargs, "LOGGING_DIR", env.str)
+    _set_if_present(kwargs, "SQL_QUERY_LOGGING", env.bool)
+    _set_if_present(kwargs, "AUTH_JWT_PUBKEY_PATH", env.path)
+    _set_if_present(kwargs, "SBAUTH_URL", env.str)
+    _set_if_present(kwargs, "SBAUTH_API_KEY", env.str)
+
+    return Env(**kwargs)
 
 
 class MultiLang(RootModel[str | dict[str, str]]): ...
@@ -76,6 +93,7 @@ class ResourceConfig(BaseModel):
     resource_id: str = PydanticField(..., description="The resource ID")
     fields: list[ResourceField] = PydanticField(..., description="The fields available in this resource.")
     label: MultiLang = PydanticField(..., description="Name for this resource, can be in mulitple languages.")
+    limited_access: bool = False
     description: MultiLang | None = PydanticField(
         default=None, description="Description of this resource, can be in mulitple languages."
     )

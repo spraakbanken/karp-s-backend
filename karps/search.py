@@ -11,7 +11,7 @@ from karps.database.query import SQLQuery
 from karps.errors.errors import InternalError, UserError
 from karps.models import CountRequest, Header, HitResponse, SearchResult, ValueHeader
 from karps.query.query import parse_query
-from karps.util import alphanumeric_key
+from karps.util.sorting import alphanumeric_key
 
 
 def search(
