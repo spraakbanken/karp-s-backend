@@ -1,6 +1,14 @@
 from collections import defaultdict
 from typing import Iterable, Sequence
-from karps.config import Env, MainConfig, ResourceConfig, format_hit, ensure_fields_exist, get_collection_fields
+from karps.config import (
+    Env,
+    MainConfig,
+    ResourceConfig,
+    format_hit,
+    ensure_fields_exist,
+    get_collection_fields,
+    get_table_fields,
+)
 from karps.database.database import (
     add_aggregation,
     run_paged_searches,
@@ -27,7 +35,12 @@ def search(
     used_resources, s = get_search(main_config, resources, parse_query(q), sort=sort)
 
     results, count_results = run_paged_searches(
-        env, s, size=size, _from=_from, collection_fields=get_collection_fields(main_config, used_resources)
+        env,
+        s,
+        size=size,
+        _from=_from,
+        collection_fields=get_collection_fields(main_config, used_resources),
+        table_fields=get_table_fields(main_config, used_resources),
     )
 
     total = 0
@@ -152,6 +165,7 @@ def _count_subquery(main_config, env, resources, query, compile, column, sort, r
             [agg_s],
             CountRequest(compile=compile, columns=column),
             collection_fields=get_collection_fields(main_config, resources),
+            table_fields=get_table_fields(main_config, resources),
         )
     )
 
