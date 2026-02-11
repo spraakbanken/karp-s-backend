@@ -20,7 +20,7 @@ class GroupConcatError(CodeUserError):
 
 class UserAccessError(CodeUserError):
     def __init__(self, resource: str):
-        super().__init__(f"user do not have access to resource: {resource}", details={"resource": resource})
+        super().__init__(f"user does not have access to resource: {resource}", details={"resource": resource})
 
 
 class JWTError(CodeUserError):
