@@ -22,7 +22,7 @@ def get_allowed_resources(
         env = config.get_env()
 
         if credentials:
-            if env.auth_jwt_pubkey_path:
+            if not env.auth_jwt_pubkey_path:
                 raise UserError("JWT auth not set up on instance")
             from karps.auth import sbauth_jwt
 
