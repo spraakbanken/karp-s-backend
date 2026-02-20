@@ -1,6 +1,6 @@
 {
     "include": [
-        "karps",
+        "src",
         "tests"
     ],
     "reportMissingImports": "information",

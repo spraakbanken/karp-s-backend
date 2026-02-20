@@ -1,4 +1,7 @@
 
+UV = uv run
+UV_EXISTS := $(shell command -v uv 2>/dev/null)
+
 .PHONY: help
 help:
 	@echo "usage:"
@@ -13,35 +16,62 @@ help:
 	@echo "   run formatter and lint with autofix on all code"
 	@echo ""
 	@echo "check-types"
-	@echo "   run typechecker on code (needs Pyright, see README.md)"
+	@echo "   run typechecker on code"
 
+.PHONY: ensure-uv
+ensure-uv:
+ifeq ($(UV_EXISTS),)
+	ifeq (${VIRTUAL_ENV},)
+		@echo "Set up either uv or a virtual environment to install with this Makefile. See README.md"
+		@false
+	else
+		pip install uv
+		export UV_PROJECT_ENVIRONMENT=$VIRTUAL_ENV
+	endif
+else
+	@:
+endif
+
+.PHONY: dev install-dev
 dev: install-dev
-install-dev:
+install-dev: ensure-uv
 	pip install --upgrade pip
 	pip install uv
-	uv sync
+	uv sync --group prod
 
-.PHONY: serve-w-reload
-serve-w-reload: install-dev
-	fastapi dev --port 9000 karps/api.py
+run:
+	mkdir run
 
-.PHONY: serve
-serve: install-dev
-	python -m uvicorn karps.api:app --port 9000
+.PHONY: serve serve-w-reload
+
+PORT ?= 9000
+NUM_WORKERS ?= 1
+
+GUNICORN_BASE = $(UV) gunicorn karps.api:app --control-socket run/gunicorn.ctl --worker-class asgi --workers $(NUM_WORKERS) --bind 127.0.0.1:$(PORT) --pid run/gunicorn.pid
+
+serve: install-dev run
+	$(GUNICORN_BASE)
+
+serve-w-reload: install-dev run
+	$(GUNICORN_BASE) --reload
+
+.PHONY: reload
+reload: run/gunicorn.ctl
+	$(UV) gunicornc -s run/gunicorn.ctl -c "reload"
 
 .PHONY: test
 test:
-	PYTHONPATH=. pytest
+	PYTHONPATH=. $(UV) pytest
 
 .PHONY: update-snapshots
 update-snapshots:
-	PYTHONPATH=. pytest --snapshot-update
+	PYTHONPATH=. $(UV) pytest --snapshot-update
 
 .PHONY: fmt
 fmt:
-	ruff format .
-	ruff check . --fix
+	$(UV) ruff format .
+	$(UV) ruff check . --fix
 
 .PHONY: check-types
 check-types:
-	basedpyright
+	$(UV) basedpyright

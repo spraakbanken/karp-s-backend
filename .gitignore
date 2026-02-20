@@ -2,3 +2,5 @@ config
 .venv
 .env
 log
+run
+*.egg-info
