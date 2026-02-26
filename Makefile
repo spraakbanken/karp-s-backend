@@ -1,6 +1,5 @@
 
 UV = uv run
-UV_EXISTS := $(shell command -v uv 2>/dev/null)
 
 .PHONY: help
 help:
@@ -8,6 +7,9 @@ help:
 	@echo ""
 	@echo "serve-w-reload"
 	@echo "   start web API with automatic reload"
+	@echo ""
+	@echo "serve"
+	@echo "   start web API without automatic reload"
 	@echo ""
 	@echo "dev | install-dev"
 	@echo "   setup development environment"
@@ -18,8 +20,13 @@ help:
 	@echo "check-types"
 	@echo "   run typechecker on code"
 
-.PHONY: ensure-uv
-ensure-uv:
+
+.PHONY: dev install-dev
+dev: .installed
+install-dev: .installed
+
+UV_EXISTS := $(shell command -v uv 2>/dev/null)
+.installed: uv.lock pyproject.toml
 ifeq ($(UV_EXISTS),)
 	ifeq (${VIRTUAL_ENV},)
 		@echo "Set up either uv or a virtual environment to install with this Makefile. See README.md"
@@ -31,13 +38,10 @@ ifeq ($(UV_EXISTS),)
 else
 	@:
 endif
-
-.PHONY: dev install-dev
-dev: install-dev
-install-dev: ensure-uv
 	pip install --upgrade pip
 	pip install uv
 	uv sync --group prod
+	@touch $@
 
 run:
 	mkdir run
@@ -58,6 +62,10 @@ serve-w-reload: install-dev run
 .PHONY: reload
 reload: run/gunicorn.ctl
 	$(UV) gunicornc -s run/gunicorn.ctl -c "reload"
+
+run/gunicorn.ctl:
+	@echo "Cannot find gunicorn control socket, have you run make serve(-w-reload)?"
+	@exit 1
 
 .PHONY: test
 test:

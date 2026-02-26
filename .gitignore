@@ -4,3 +4,4 @@ config
 log
 run
 *.egg-info
+.installed
