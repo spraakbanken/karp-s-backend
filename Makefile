@@ -57,7 +57,7 @@ serve: install-dev run
 	$(GUNICORN_BASE)
 
 serve-w-reload: install-dev run
-	$(GUNICORN_BASE) --reload
+	$(GUNICORN_BASE) --reload --graceful-timeout 1
 
 .PHONY: reload
 reload: run/gunicorn.ctl
