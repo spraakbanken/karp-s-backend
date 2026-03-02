@@ -223,7 +223,11 @@ def get_resource_configs_param():
 @app.get("/config", summary="Get config", response_model_exclude_unset=True)
 def get_config(allowed_resources: list[str] = Depends(get_allowed_resources)) -> ConfigResponse:
     """
-    Returns a description of contents of each installed resource/lexicon. For example the available fields and their types.
+    Returns a description of the contents of each installed resource/lexicon. For example the available fields and their types.
+
+    Some resources have `limitedAccess: true` - they will not be searchable without access.
+
+    Some resources have `protectedMetadata: true` - they will not be returned by this call without access.
     """
     config = load_config(env)
     resources = list(get_resource_configs(env, allowed=allowed_resources))
