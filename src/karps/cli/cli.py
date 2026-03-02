@@ -53,7 +53,7 @@ def restart_workers(config: Env):
     p = subprocess.run(["make", "reload"], cwd=config.base_path, capture_output=True, check=False, encoding="utf-8")
     if p.returncode:
         logger.warning("failed to reload karp-s-backend")
-        raise RuntimeError()
+        raise RuntimeError(f"stdout: {p.stdout}, stderr: {p.stderr}")
     else:
         logger.info("karp-s-backend reloaded")
 

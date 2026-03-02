@@ -100,7 +100,12 @@ class ResourceConfig(BaseModel):
     resource_id: str = PydanticField(..., description="The resource ID")
     fields: list[ResourceField] = PydanticField(..., description="The fields available in this resource.")
     label: MultiLang = PydanticField(..., description="Name for this resource, can be in mulitple languages.")
-    limited_access: bool = False
+    limited_access: bool = PydanticField(
+        default=False, description="The resource is only available for users with access"
+    )
+    protected_metadata: bool = PydanticField(
+        default=False, description="The metadata of the resource is only available for users with access"
+    )
     description: MultiLang | None = PydanticField(
         default=None, description="Description of this resource, can be in mulitple languages."
     )
