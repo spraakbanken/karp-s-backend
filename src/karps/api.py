@@ -221,12 +221,13 @@ def get_resource_configs_param():
 
 
 @app.get("/config", summary="Get config", response_model_exclude_unset=True)
-def get_config() -> ConfigResponse:
+def get_config(allowed_resources: list[str] = Depends(get_allowed_resources)) -> ConfigResponse:
     """
     Returns a description of contents of each installed resource/lexicon. For example the available fields and their types.
     """
     config = load_config(env)
-    return ConfigResponse(tags=config.tags, fields=config.fields, resources=list(get_resource_configs(env)))
+    resources = list(get_resource_configs(env, allowed=allowed_resources))
+    return ConfigResponse(tags=config.tags, fields=config.fields, resources=resources)
 
 
 @app.get("/search", summary="Search", responses=default_500)

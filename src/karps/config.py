@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import functools
 import os
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Optional
+from typing import Any, Iterable, Iterator, Optional, Sequence
 import environs
 import glob
 
@@ -156,7 +156,17 @@ def open_local(config: Env, path: str):
             fp.close()
 
 
-def get_resource_configs(config: Env, resource_id: str | None = None) -> Iterator[ResourceConfig]:
+def get_resource_configs(
+    config: Env, resource_id: str | None = None, restrict=True, allowed: Sequence[str] = ()
+) -> Iterator[ResourceConfig]:
+    """
+    Load and return all resource configurations or a single one if resource_id is given
+    Arguments:
+    config -- needed for base_path
+    resource_id -- a specific resource to access
+    restrict -- if True, will not return resources that are not in allowed where protected_metadata is set to true
+    allowed -- a list of resources that this user has explicit access to
+    """
     if resource_id:
         glob_pattern = f"{resource_id}.yaml"
     else:
@@ -164,12 +174,14 @@ def get_resource_configs(config: Env, resource_id: str | None = None) -> Iterato
     # TODO use same sort as in search
     for resource in sorted(glob.glob(os.path.join(config.base_path, f"config/resources/{glob_pattern}"))):
         with open_local(config, resource) as fp:
-            yield ResourceConfig(**yaml.safe_load(fp))
+            rc = ResourceConfig(**yaml.safe_load(fp))
+            if not(restrict and rc.protected_metadata and rc.resource_id not in allowed):
+                yield rc
 
 
 def get_resource_config(env: Env, resource_id: str) -> ResourceConfig:
     try:
-        return next(get_resource_configs(env, resource_id))
+        return next(get_resource_configs(env, resource_id, restrict=False))
     except StopIteration:
         raise errors.UserError("One or more of the resources are missing")
 
