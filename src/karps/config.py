@@ -58,7 +58,7 @@ def get_env() -> Env:
 class MultiLang(RootModel[str | dict[str, str]]): ...
 
 
-class Field(BaseModel):
+class ConfigField(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = PydanticField(
         ..., description="(Machine) name of the field. This name is used by resources to list the available fields."
@@ -71,13 +71,16 @@ class Field(BaseModel):
     fields: dict[str, "Field"] = PydanticField(
         default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
     )
-    resource_id: list[str] = PydanticField(
-        default_factory=list, description="The resources that this field is available in."
-    )
 
     def model_post_init(self, _):
         if self.label is None:
             self.label = MultiLang(self.name)
+
+
+class Field(ConfigField):
+    resource_id: list[str] = PydanticField(
+        default_factory=list, description="The resources that this field is available in."
+    )
 
 
 class EntryWord(BaseModel):
@@ -136,7 +139,7 @@ class ConfigResponse(BaseModel):
     tags: dict[str, Tag] = PydanticField(
         ..., description='All tags available in this instance. Will be used by some of the resources under "resources".'
     )
-    fields: dict[str, Field] = PydanticField(..., description="All fields available in this instance.")
+    fields: dict[str, ConfigField] = PydanticField(..., description="All fields available in this instance.")
 
 
 class MainConfig(BaseModel):
@@ -175,7 +178,7 @@ def get_resource_configs(
     for resource in sorted(glob.glob(os.path.join(config.base_path, f"config/resources/{glob_pattern}"))):
         with open_local(config, resource) as fp:
             rc = ResourceConfig(**yaml.safe_load(fp))
-            if not(restrict and rc.protected_metadata and rc.resource_id not in allowed):
+            if not (restrict and rc.protected_metadata and rc.resource_id not in allowed):
                 yield rc
 
 

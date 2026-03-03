@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from karps.config import (
+    ConfigField,
     Env,
     ConfigResponse,
     ResourceConfig,
@@ -231,7 +232,11 @@ def get_config(allowed_resources: list[str] = Depends(get_allowed_resources)) ->
     """
     config = load_config(env)
     resources = list(get_resource_configs(env, allowed=allowed_resources))
-    return ConfigResponse(tags=config.tags, fields=config.fields, resources=resources)
+    fields = {}
+    for key, val in config.fields.items():
+        new_val = ConfigField(**val.model_dump(exclude={"resource_id"}))
+        fields[key] = new_val
+    return ConfigResponse(tags=config.tags, fields=fields, resources=resources)
 
 
 @app.get("/search", summary="Search", responses=default_500)
