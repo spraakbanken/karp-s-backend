@@ -9,7 +9,7 @@ import glob
 
 
 from karps.errors import errors
-from pydantic import ConfigDict, RootModel, Field as PydanticField
+from pydantic import ConfigDict, RootModel, Field as PydanticField, SerializerFunctionWrapHandler, model_serializer
 import yaml
 
 from karps.models import BaseModel
@@ -75,6 +75,14 @@ class ConfigField(BaseModel):
     def model_post_init(self, _):
         if self.label is None:
             self.label = MultiLang(self.name)
+
+    # replace the model serializer with exclude_if on "fields" when we are using Pydantic v2.12
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler: SerializerFunctionWrapHandler):
+        data = handler(self)
+        if data.get("fields") == {}:
+            data.pop("fields", None)
+        return data
 
 
 class Field(ConfigField):
