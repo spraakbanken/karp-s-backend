@@ -5,7 +5,7 @@ description = "Structed data infrastructure"
 readme = "README.md"
 requires-python = ">=3.12.3"
 dependencies = [
-    "fastapi>=0.115.6",
+    "fastapi==0.124.2",
     "PyYAML==6.0.2",
     "mysql-connector-python",
     "environs",
