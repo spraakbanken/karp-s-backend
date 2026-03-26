@@ -99,6 +99,67 @@ def _get_data_selection(resource_config: ResourceConfig, selection: Iterable[str
         sel.append((resource_config.entry_word.field, "entry_word"))
     return sel
 
+def _get_search(
+    main_config: MainConfig,
+    resource_config: ResourceConfig,
+    q: Query,
+    selection: Iterable[str] = ("*"),
+    sort: Sequence[tuple[str, str]] = (),
+) -> SQLQuery  | None:
+    fields = main_config.fields
+
+    sel = _get_data_selection(resource_config, selection)
+    sql_q = select(sel).from_table(resource_config.resource_id)
+
+    # get sql where clause from query
+    bool_op, parts = get_query(main_config, resource_config.entry_word.field, q)
+
+    ignore_resource = False
+    for field, _ in parts:
+        if field not in resource_config.field_names:
+            # if a query is posed with a field that is not supported in the resource, ignore the resource
+            ignore_resource = True
+            break
+    if ignore_resource:
+        return None
+
+    for field in resource_config.field_names:
+        if parts:
+            sql_q.op(bool_op)
+        # only join tables that are used in selection
+        # TODO must also add joins that are used in queries
+        if fields[field].collection:
+            where_kwarg: dict[str, Any] = {}
+            for where_field, where in parts:
+                if where and where_field == field:
+                    # add where clause to inner/cte/join-query
+                    where_kwarg = {"where": where}
+            if field in [s[0] for s in sel] or where_kwarg:
+                if fields[field].type == "table":
+                    where_kwarg["field_names"] = list(fields[field].fields.keys())
+                aliases = [alias for col, alias in sel if col == field]
+                if aliases:
+                    where_kwarg["alias"] = aliases[0]
+                sql_q.join(field, **where_kwarg)
+        for where_field, where in parts:
+            if where and where_field and where_field == field and not fields[where_field].collection:
+                # add where clause to outer query
+                sql_q.where(where)
+    if sort:
+        if sort[0][0] == "_default":
+            order = sort[0][1]
+            # use the resource's default field
+            sql_q.order_by([(resource_config.entry_word.field, order)])
+        else:
+            # update any use of entryWord to the actual field
+            resource_sort = [
+                (resource_config.entry_word.field if field in ["entryWord", "entry_word"] else field, order)
+                for (field, order) in sort
+            ]
+            # check that the sort fields are available in resource
+            _check_sort_allowed(resource_config, resource_sort)
+            sql_q.order_by(resource_sort)
+    return sql_q
 
 def get_search(
     main_config: MainConfig,
@@ -112,65 +173,13 @@ def get_search(
     Returns a tuple of resource IDs and corresponding queries, because it is possble that
     not all requested resources are supported for the search.
     """
-
-    fields = main_config.fields
-
     res_resources = []
     res_q = []
     for resource_config in resources:
-        sel = _get_data_selection(resource_config, selection)
-        sql_q = select(sel).from_table(resource_config.resource_id)
-
-        # get sql where clause from query
-        bool_op, parts = get_query(main_config, resource_config.entry_word.field, q)
-
-        ignore_resource = False
-        for field, _ in parts:
-            if field not in resource_config.field_names:
-                # if a query is posed with a field that is not supported in the resource, ignore the resource
-                ignore_resource = True
-                break
-        if ignore_resource:
-            continue
-
-        for field in resource_config.field_names:
-            if parts:
-                sql_q.op(bool_op)
-            # only join tables that are used in selection
-            # TODO must also add joins that are used in queries
-            if fields[field].collection:
-                where_kwarg: dict[str, Any] = {}
-                for where_field, where in parts:
-                    if where and where_field == field:
-                        # add where clause to inner/cte/join-query
-                        where_kwarg = {"where": where}
-                if field in [s[0] for s in sel] or where_kwarg:
-                    if fields[field].type == "table":
-                        where_kwarg["field_names"] = list(fields[field].fields.keys())
-                    aliases = [alias for col, alias in sel if col == field]
-                    if aliases:
-                        where_kwarg["alias"] = aliases[0]
-                    sql_q.join(field, **where_kwarg)
-            for where_field, where in parts:
-                if where and where_field and where_field == field and not fields[where_field].collection:
-                    # add where clause to outer query
-                    sql_q.where(where)
-        if sort:
-            if sort[0][0] == "_default":
-                order = sort[0][1]
-                # use the resource's default field
-                sql_q.order_by([(resource_config.entry_word.field, order)])
-            else:
-                # update any use of entryWord to the actual field
-                resource_sort = [
-                    (resource_config.entry_word.field if field in ["entryWord", "entry_word"] else field, order)
-                    for (field, order) in sort
-                ]
-                # check that the sort fields are available in resource
-                _check_sort_allowed(resource_config, resource_sort)
-                sql_q.order_by(resource_sort)
-        res_resources.append(resource_config)
-        res_q.append(sql_q)
+        sql_q = _get_search(main_config, resource_config, q, selection, sort)
+        if sql_q:
+            res_resources.append(resource_config)
+            res_q.append(sql_q)
     return res_resources, res_q
 
 
