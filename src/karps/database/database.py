@@ -99,23 +99,24 @@ def _get_data_selection(resource_config: ResourceConfig, selection: Iterable[str
         sel.append((resource_config.entry_word.field, "entry_word"))
     return sel
 
+
 def _get_search(
     main_config: MainConfig,
     resource_config: ResourceConfig,
     q: Query,
     selection: Iterable[str] = ("*"),
     sort: Sequence[tuple[str, str]] = (),
-) -> SQLQuery  | None:
+) -> SQLQuery | None:
     fields = main_config.fields
 
     sel = _get_data_selection(resource_config, selection)
     sql_q = select(sel).from_table(resource_config.resource_id)
 
     # get sql where clause from query
-    bool_op, parts = get_query(main_config, resource_config.entry_word.field, q)
+    query_fields, main_query, collection_queries = get_query(main_config, resource_config.entry_word.field, q)
 
     ignore_resource = False
-    for field, _ in parts:
+    for field in query_fields:
         if field not in resource_config.field_names:
             # if a query is posed with a field that is not supported in the resource, ignore the resource
             ignore_resource = True
@@ -123,16 +124,15 @@ def _get_search(
     if ignore_resource:
         return None
 
+    # TODO
+    # only join tables that are used in selection or queries
     for field in resource_config.field_names:
-        if parts:
-            sql_q.op(bool_op)
-        # only join tables that are used in selection
-        # TODO must also add joins that are used in queries
         if fields[field].collection:
             where_kwarg: dict[str, Any] = {}
-            for where_field, where in parts:
+            for where_field, where in collection_queries:
                 if where and where_field == field:
                     # add where clause to inner/cte/join-query
+                    # TODO there can be more than one constraint on the same collection field
                     where_kwarg = {"where": where}
             if field in [s[0] for s in sel] or where_kwarg:
                 if fields[field].type == "table":
@@ -141,10 +141,9 @@ def _get_search(
                 if aliases:
                     where_kwarg["alias"] = aliases[0]
                 sql_q.join(field, **where_kwarg)
-        for where_field, where in parts:
-            if where and where_field and where_field == field and not fields[where_field].collection:
-                # add where clause to outer query
-                sql_q.where(where)
+    if main_query:
+        sql_q.where(main_query)
+
     if sort:
         if sort[0][0] == "_default":
             order = sort[0][1]
@@ -160,6 +159,7 @@ def _get_search(
             _check_sort_allowed(resource_config, resource_sort)
             sql_q.order_by(resource_sort)
     return sql_q
+
 
 def get_search(
     main_config: MainConfig,

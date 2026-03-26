@@ -2,7 +2,7 @@ import itertools
 
 from karps.config import EntryWord, Field, MainConfig, MultiLang, ResourceConfig, ResourceField
 from karps.database.database import add_aggregation, get_search
-from karps.query.query import Query, parse_query
+from karps.query.query import NullQuery, parse_query
 
 # NOTE in this code, snapshot is a fixture from the Syrupy snapshot testing library
 
@@ -70,7 +70,7 @@ def create_search_queries(query=[], resource_configs=(), selection=None):
     if clauses:
         q = parse_query(f"and({'||'.join(clauses)})")
     else:
-        q = Query("and", clauses=[])
+        q = NullQuery()
     if selection:
         # count uses this
         return get_search(main_config, resource_configs, q, selection=selection)

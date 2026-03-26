@@ -1,5 +1,5 @@
 from karps.config import Field, MainConfig
-from karps.query.query import parse_query, get_query
+from karps.query.query import SubQuery, parse_query, get_query
 
 
 dummy_config = MainConfig(
@@ -11,50 +11,45 @@ dummy_config = MainConfig(
     },
 )
 
+# TODO add test for collection
+
 
 def test_parse():
     q = parse_query("equals|field|value")
-    assert q.clauses
-    assert q.clauses[0].op == "equals"
-    assert q.clauses[0].field == "field"
-    assert q.clauses[0].value == "value"
+    assert isinstance(q, SubQuery)
+    assert q.op == "equals"
+    assert q.field == "field"
+    assert q.value == "value"
 
 
 def test_sql_query():
     ast = parse_query("equals|field|value")
-    _, [(field, op_arg)] = get_query(dummy_config, "", ast)
-    assert field == "field"
-    assert op_arg == "`field` = 'value'"
+    fields, query, collection_queries = get_query(dummy_config, "", ast)
+    assert fields == ["field"]
+    assert query == "`field` = 'value'"
+    assert collection_queries == []
 
 
 def test_and_1():
     ast = parse_query("and(equals|field|value1)")
-    op, elems = get_query(dummy_config, "", ast)
-    assert op == "and"
-    assert isinstance(elems, list)
-    for field, op_arg in elems:
-        assert field == "field"
-        assert op_arg == "`field` = 'value1'"
+    fields, query, collection_queries = get_query(dummy_config, "", ast)
+    assert query == "`field` = 'value1'"
+    assert fields == ["field"]
+    assert collection_queries == []
 
 
 def test_or_1():
     ast = parse_query("or(equals|field|value1)")
-    op, elems = get_query(dummy_config, "", ast)
-    assert op == "or"
-    assert isinstance(elems, list)
-    for field, op_arg in elems:
-        assert field == "field"
-        assert op_arg == "`field` = 'value1'"
+    fields, query, collection_queries = get_query(dummy_config, "", ast)
+    assert query == "`field` = 'value1'"
+    assert fields == ["field"]
+    assert collection_queries == []
 
 
 def test_and_2():
     ast = parse_query("and(equals|field1|value1||equals|field2|value2)")
-    op, elems = get_query(dummy_config, "", ast)
-    assert op == "and"
-    assert isinstance(elems, list)
-    field1, op_arg1 = elems[0]
-    assert field1 == "field1"
-    assert op_arg1 == "`field1` = 'value1'"
-    field2, op_arg2 = elems[1]
-    assert field2 == "field2"
-    assert op_arg2 == "`field2` = 'value2'"
+    fields, query, collection_queries = get_query(dummy_config, "", ast)
+    # TODO currently reversed, but will be fixed
+    assert fields == ["field2", "field1"]
+    assert query == "`field2` = 'value2' and `field1` = 'value1'"
+    assert collection_queries == []

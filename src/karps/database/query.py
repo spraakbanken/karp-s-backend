@@ -14,9 +14,9 @@ class SQLQuery:
         self.table = None
         # where
         self._op = "and"
-        self.clauses = []
         # each element will generate a CTE and a JOIN
         self.joins = {}
+        self.where_clause = None
         self._group_by = None
         self._order_by = None
         self._from = 0
@@ -58,7 +58,7 @@ class SQLQuery:
         return self
 
     def where(self, clause):
-        self.clauses.append(clause)
+        self.where_clause = clause
         return self
 
     def from_page(self, page):
@@ -186,29 +186,19 @@ class SQLQuery:
             else:
                 raise RuntimeError("error in SQL generation")
 
-            # for certain queries we are working against derived tables
-            if self.joins:
-                # for join in inner_q.joins:
-                #     qs = inner_q.get_ctes(join)
-                #     ctes.append((join, qs))
+            table_prefix = f"`{self.table}`." if self.table else ""
 
-                table_prefix = f"`{self.table}`." if self.table else ""
+            # add in joins needed for data from CTE:s
+            if self.joins:
                 for join_field in self.joins:
                     # use alias or field name
                     name = self.joins[join_field][0] or join_field
-                    if self.joins[join_field][1]:
-                        self.clauses.append(
-                            f"EXISTS (SELECT 1 FROM `{name}__where` WHERE {table_prefix}__id = __parent_id)"
-                        )
-                        # s += f" JOIN `{name}__where` ON `{name}__where`.__parent_id = {table_prefix}__id"
-
                     # use left joins for data fetching (skip when just counting rows)
                     if not count:
                         s += f" LEFT JOIN `{name}__data` ON `{name}__data`.__parent_id = {table_prefix}__id"
 
-            # where for queries on data in columns, not joins
-            if self.clauses:
-                s += f" WHERE {f' {self._op} '.join(self.clauses)}"
+            if self.where_clause:
+                s += f" WHERE {self.where_clause.replace('TABLE_PREFIX', table_prefix)}"
 
             if self._group_by:
                 s += f" GROUP BY {self._group_by}"

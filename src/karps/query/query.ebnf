@@ -8,8 +8,7 @@ start
 expression
     =
     | logical_expression
-    # to simplyfied reading the resulting AST, treat non-boolean top-level expressions as an and with a single clause
-    | op:`and` args:{query_expression}+
+    | query_expression
     ;
 
 query_expression
@@ -50,16 +49,22 @@ logical_expression
     =
     | and
     | or
+    | not
+    ;
+
+not::Not
+    =
+    op:'not' '(' args:'||'.{expression}+ ')'
     ;
 
 and::And
     =
-    op:'and' '(' args:'||'.{query_expression}* ')'
+    op:'and' '(' args:'||'.{expression}* ')'
     ;
 
 or::Or
     =
-    op:'or' '(' args:'||'.{query_expression}* ')'
+    op:'or' '(' args:'||'.{expression}* ')'
     ;
 
 any_value
