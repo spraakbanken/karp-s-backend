@@ -51,7 +51,7 @@ def parse_query(q: str | None) -> Query:
                 for inner_ast in ast.args:
                     queries.append(recurse(inner_ast))
                 if queries:
-                    return LogicalQuery(op=ast.op, clauses=queries)
+                    return LogicalQuery(op=ast.op.upper(), clauses=queries)
                 else:
                     return NullQuery()
             else:
@@ -93,21 +93,16 @@ def get_query(
     def recurse(q):
         if isinstance(q, LogicalQuery):
             parts = []
-            # TODO remove reversed
-            for inner_q in reversed(q.clauses):
+            for inner_q in q.clauses:
                 a = recurse(inner_q)
                 parts.append(a)
-            if q.op == "not":
+            if q.op == "NOT":
                 if len(parts) > 1:
                     # TODO fix
                     raise RuntimeError("Only one clause for not-operator (tmp)")
                 return f"NOT({parts[0]})"
             else:
-                # TODO remove this sorting, but for now, move all exists to the end, because it was like this in previous implementation
-                return f" {q.op} ".join(
-                    [part for part in parts if part[0:6] != "EXISTS"]
-                    + [part for part in parts if part[0:6] == "EXISTS"]
-                )
+                return f" {q.op} ".join(parts)
         elif isinstance(q, SubQuery):
             # If the field is entry_word / entryWord, use the specified word_column, as it can differ across resources.
             if q.field in ["entry_word", "entryWord"]:

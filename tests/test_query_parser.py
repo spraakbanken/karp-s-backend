@@ -49,7 +49,6 @@ def test_or_1():
 def test_and_2():
     ast = parse_query("and(equals|field1|value1||equals|field2|value2)")
     fields, query, collection_queries = get_query(dummy_config, "", ast)
-    # TODO currently reversed, but will be fixed
-    assert fields == ["field2", "field1"]
-    assert query == "`field2` = 'value2' and `field1` = 'value1'"
+    assert fields == ["field1", "field2"]
+    assert query == "`field1` = 'value1' AND `field2` = 'value2'"
     assert collection_queries == []
