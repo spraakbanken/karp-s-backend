@@ -124,9 +124,8 @@ def _get_search(
     if ignore_resource:
         return None
 
-    # TODO
-    # only join tables that are used in selection or queries
     for field in resource_config.field_names:
+        # only join tables that are used in selection or queries
         if fields[field].collection:
             where_kwarg: dict[str, Any] = {}
             for where_field, where in collection_queries:

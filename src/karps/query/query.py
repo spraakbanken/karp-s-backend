@@ -30,7 +30,7 @@ class LogicalQuery(Query):
     """
     Uses the same query language as Karp, described here:
     https://spraakbanken4.it.gu.se/karp/v7/#tag/Searching
-    Currently, support in this class in very limited
+    Sub-queries, freetext and multiple operands for `not(*)` is not supported
     """
 
     op: str
@@ -51,6 +51,8 @@ def parse_query(q: str | None) -> Query:
                 for inner_ast in ast.args:
                     queries.append(recurse(inner_ast))
                 if queries:
+                    if ast.op == "not" and len(queries) > 1:
+                        raise errors.UserError("Only one clause for not-operator supported")
                     return LogicalQuery(op=ast.op.upper(), clauses=queries)
                 else:
                     return NullQuery()
@@ -88,21 +90,20 @@ def get_query(
     fields = []
     main_query: str
     # from collections
-    sub_queries: list[tuple[str, str]] = []
+    collection_queries: list[tuple[str, str]] = []
 
-    def recurse(q):
+    def recurse(q) -> tuple[str, bool]:
         if isinstance(q, LogicalQuery):
             parts = []
             for inner_q in q.clauses:
-                a = recurse(inner_q)
+                a, complex = recurse(inner_q)
+                if complex:
+                    a = f"({a})"
                 parts.append(a)
             if q.op == "NOT":
-                if len(parts) > 1:
-                    # TODO fix
-                    raise RuntimeError("Only one clause for not-operator (tmp)")
-                return f"NOT({parts[0]})"
+                return f"NOT {parts[0]}", True
             else:
-                return f" {q.op} ".join(parts)
+                return f" {q.op} ".join(parts), True
         elif isinstance(q, SubQuery):
             # If the field is entry_word / entryWord, use the specified word_column, as it can differ across resources.
             if q.field in ["entry_word", "entryWord"]:
@@ -113,18 +114,18 @@ def get_query(
             field_type: str = main_config.fields[field].type
             where_part = to_where_clause(field, field_type, q)
             if main_config.fields[field].collection:
-                sub_queries.append((field, where_part))
+                collection_queries.append((field, where_part))
                 # TABLE_PREFIX will be replaced
                 # {field} must have a counter
                 where_part = f"EXISTS (SELECT 1 FROM `{field}__where` WHERE TABLE_PREFIX__id = __parent_id)"
 
-            return where_part
+            return where_part, False
         else:
             raise RuntimeError("cannot happen")
 
-    main_query = recurse(outer_q)
+    main_query, _ = recurse(outer_q)
 
-    return fields, main_query, sub_queries
+    return fields, main_query, collection_queries
 
 
 def to_where_clause(field, field_type, q) -> str:

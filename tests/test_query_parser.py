@@ -52,3 +52,17 @@ def test_and_2():
     assert fields == ["field1", "field2"]
     assert query == "`field1` = 'value1' AND `field2` = 'value2'"
     assert collection_queries == []
+
+
+def test_not():
+    ast = parse_query("not(equals|field|value)")
+    _, query, _ = get_query(dummy_config, "", ast)
+    assert query == "NOT `field` = 'value'"
+
+
+def test_complex_query():
+    q_in = "equals|field|value"
+    q_out = "`field` = 'value'"
+    ast = parse_query(f"and(or(not({q_in})||{q_in})||{q_in})")
+    _, query, _ = get_query(dummy_config, "", ast)
+    assert query == f"((NOT {q_out}) OR {q_out}) AND {q_out}"

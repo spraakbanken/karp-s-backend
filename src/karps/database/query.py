@@ -123,7 +123,7 @@ class SQLQuery:
                 # add needed CTE for outer query
                 for join in self.joins:
                     qs = self.get_ctes(join)
-                    ctes.append((join, qs))
+                    ctes.append(qs)
 
                 # add needed CTEs for inner queries recursively
                 def recurse(q):
@@ -131,13 +131,13 @@ class SQLQuery:
                     for _, inner_q in q.inner_queries:
                         for join in inner_q.joins:
                             qs = inner_q.get_ctes(join)
-                            ctes.append((join, qs))
+                            ctes.append(qs)
                         ctes.extend(recurse(inner_q))
                     return ctes
 
                 ctes.extend(recurse(self))
 
-                for _, (where_cte, data_cte) in ctes:
+                for where_cte, data_cte in ctes:
                     # query on collection field
                     if where_cte:
                         str_ctes.append(where_cte)
