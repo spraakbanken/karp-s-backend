@@ -126,7 +126,8 @@ def create_count_query(compile_type=None, columns_type=None, query: Query = Null
 # function for generating pytest functions, useful for reporting and being able to update single snapshots
 def make_test_search(query_type: list[str], query: Query):
     def test(snapshot):
-        assert create_search_query(query=query) == snapshot(
+        asdf = create_search_query(query=query)
+        assert asdf == snapshot(
             # using the configuration to name snapshot
             name=f"s{','.join(query_type)}"
         )

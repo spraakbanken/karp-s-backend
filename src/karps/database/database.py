@@ -124,22 +124,23 @@ def _get_search(
     if ignore_resource:
         return None
 
-    for field in resource_config.field_names:
-        # only join tables that are used in selection or queries
+    for where_field, count, where in collection_queries:
+        # add where clause to inner/cte/join-query
+        sql_q.join(where_field, count=count, where=where)
+
+    # join tables that are used in selection
+    for field in [s[0] for s in sel]:
+        if field not in fields:
+            continue
+
         if fields[field].collection:
             where_kwarg: dict[str, Any] = {}
-            for where_field, where in collection_queries:
-                if where and where_field == field:
-                    # add where clause to inner/cte/join-query
-                    # TODO there can be more than one constraint on the same collection field
-                    where_kwarg = {"where": where}
-            if field in [s[0] for s in sel] or where_kwarg:
-                if fields[field].type == "table":
-                    where_kwarg["field_names"] = list(fields[field].fields.keys())
-                aliases = [alias for col, alias in sel if col == field]
-                if aliases:
-                    where_kwarg["alias"] = aliases[0]
-                sql_q.join(field, **where_kwarg)
+            if fields[field].type == "table":
+                where_kwarg["field_names"] = list(fields[field].fields.keys())
+            aliases = [alias for col, alias in sel if col == field]
+            if aliases:
+                where_kwarg["alias"] = aliases[0]
+            sql_q.join(field, **where_kwarg)
     if main_query:
         sql_q.where(main_query)
 

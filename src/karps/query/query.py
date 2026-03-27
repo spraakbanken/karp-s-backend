@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, cast
 import tatsu
@@ -76,7 +77,7 @@ def get_epsilon(q_number):
 
 def get_query(
     main_config: MainConfig, word_column: str, outer_q: Query
-) -> tuple[list[str], str | None, list[tuple[str, str]]]:
+) -> tuple[set[str], str | None, list[tuple[str, int, str]]]:
     """
     Translates a query tree into an SQL WHERE clause.
 
@@ -85,12 +86,14 @@ def get_query(
     :return: A string representing the SQL WHERE clause.
     """
     if isinstance(outer_q, NullQuery):
-        return [], None, []
+        return set(), None, []
 
-    fields = []
+    fields = set()
     main_query: str
     # from collections
-    collection_queries: list[tuple[str, str]] = []
+    collection_queries: list[tuple[str, int, str]] = []
+
+    collection_field_count = defaultdict(int)
 
     def recurse(q) -> tuple[str, bool]:
         if isinstance(q, LogicalQuery):
@@ -110,14 +113,18 @@ def get_query(
                 field = word_column
             else:
                 field = q.field
-            fields.append(field)
+            fields.add(field)
             field_type: str = main_config.fields[field].type
             where_part = to_where_clause(field, field_type, q)
             if main_config.fields[field].collection:
-                collection_queries.append((field, where_part))
+                count = collection_field_count[field]
+                collection_queries.append((field, count, where_part))
+
                 # TABLE_PREFIX will be replaced
-                # {field} must have a counter
-                where_part = f"EXISTS (SELECT 1 FROM `{field}__where` WHERE TABLE_PREFIX__id = __parent_id)"
+                where_part = (
+                    f"EXISTS (SELECT 1 FROM `{field}{f'_{count}'}__where` WHERE TABLE_PREFIX__id = __parent_id)"
+                )
+                collection_field_count[field] += 1
 
             return where_part, False
         else:
