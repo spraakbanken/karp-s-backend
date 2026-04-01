@@ -39,13 +39,16 @@ def main():
     elif sys.argv[1] == "reload":
         restart_workers(config)
     elif sys.argv[1] == "reconfigure":
-        for path in glob.glob(str(main_dir / "incoming/*")):
-            resource_dir = Path(path)
-            if resource_dir.is_dir():
-                process_resource(main_dir, resource_dir, repo)
+        reconfigure(main_dir, repo)
+        restart_workers(config)
+    elif sys.argv[1] == "remove":
+        resource_id = sys.argv[2]
+        resource_dir = main_dir / "incoming" / resource_id
+        shutil.rmtree(resource_dir, ignore_errors=True)
+        reconfigure(main_dir, repo)
         restart_workers(config)
     else:
-        logger.info(f"karp-s-cli: commands not supported {sys.argv}")
+        raise RuntimeError(f"karp-s-cli: commands not supported {sys.argv}")
 
 
 def restart_workers(config: Env):
@@ -56,6 +59,13 @@ def restart_workers(config: Env):
         raise RuntimeError(f"stdout: {p.stdout}, stderr: {p.stderr}")
     else:
         logger.info("karp-s-backend reloaded")
+
+
+def reconfigure(main_dir: Path, repo):
+    for path in glob.glob(str(main_dir / "incoming/*")):
+        resource_dir = Path(path)
+        if resource_dir.is_dir():
+            process_resource(main_dir, resource_dir, repo)
 
 
 def process_resource(
