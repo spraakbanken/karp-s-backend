@@ -69,11 +69,11 @@ run/gunicorn.ctl:
 
 .PHONY: test
 test:
-	PYTHONPATH=. $(UV) pytest
+	PYTHONPATH=. $(UV) pytest $(ARGS)
 
 .PHONY: update-snapshots
 update-snapshots:
-	PYTHONPATH=. $(UV) pytest --snapshot-update
+	PYTHONPATH=. $(UV) pytest --snapshot-update $(ARGS)
 
 .PHONY: fmt
 fmt:

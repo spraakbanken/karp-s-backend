@@ -2,7 +2,7 @@ import itertools
 
 from karps.config import EntryWord, Field, MainConfig, MultiLang, ResourceConfig, ResourceField
 from karps.database.database import add_aggregation, get_search
-from karps.query.query import Query, parse_query
+from karps.query.query import NullQuery, Query, parse_query
 
 # NOTE in this code, snapshot is a fixture from the Syrupy snapshot testing library
 
@@ -44,42 +44,57 @@ SCALAR = "SCALAR"
 COLLECTION = "COLLECTION"
 ENTRY_WORD = "WORD"
 
+PATTERNS = {
+    "AND": lambda clauses: f"and({'||'.join(clauses)})",
+    "OR": lambda clauses: f"or({'||'.join(clauses)})",
+    "MIXED": lambda clauses: "and(not({0})||or({1}||not(and({2}||{3})))||{4})".format(
+        *(clauses[idx % len(clauses)] for idx in range(5))
+    ),
+}
 
-def get_power_set(values):
-    power_set = []
+
+def get_queries(values) -> list[tuple[list[str], Query]]:
+    queries = []
     for r in range(len(values) + 1):
         for combo in itertools.combinations(values, r):
-            power_set.append(list(combo))
+            elems = list(combo)
+            clauses = []
+            for clause in elems:
+                if clause == COLLECTION:
+                    clauses.append("equals|col1|1")
+                elif clause == SCALAR:
+                    clauses.append("equals|data3|1")
+                elif clause == ENTRY_WORD:
+                    clauses.append("equals|entry_word|1")
+            if len(elems) == 1:
+                queries.append((elems, parse_query(clauses[0])))
+                queries.append((elems + ["NOT"], parse_query(f"not({clauses[0]})")))
+            elif len(elems) == 0:
+                queries.append((elems, NullQuery()))
+            else:
+                for key, pattern in PATTERNS.items():
+                    if key != "AND":
+                        elems2 = elems + [key]
+                    else:
+                        elems2 = elems
+                    queries.append((elems2, parse_query(pattern(clauses))))
+    return queries
 
-    return power_set
 
-
-def create_search_query(query=None):
+def create_search_query(query: Query = NullQuery()):
     return create_search_queries(query=query, resource_configs=resource_configs[0:1])[1][0].to_string()
 
 
-def create_search_queries(query=[], resource_configs=(), selection=None):
-    clauses = []
-    for clause in query:
-        if clause == COLLECTION:
-            clauses.append("equals|col1|1")
-        elif clause == SCALAR:
-            clauses.append("equals|data3|1")
-        elif clause == ENTRY_WORD:
-            clauses.append("equals|entry_word|1")
-    if clauses:
-        q = parse_query(f"and({'||'.join(clauses)})")
-    else:
-        q = Query("and", clauses=[])
+def create_search_queries(query: Query = NullQuery(), resource_configs=(), selection=None):
     if selection:
         # count uses this
-        return get_search(main_config, resource_configs, q, selection=selection)
+        return get_search(main_config, resource_configs, query, selection=selection)
     else:
         # search uses this (currently search does not allow selecting columns)
-        return get_search(main_config, resource_configs, q)
+        return get_search(main_config, resource_configs, query)
 
 
-def create_count_query(compile_type=None, columns_type=None, query=None):
+def create_count_query(compile_type=None, columns_type=None, query: Query = NullQuery()):
     if compile_type is ENTRY_WORD:
         compile = ["entry_word"]
     elif compile_type == SCALAR:
@@ -109,9 +124,10 @@ def create_count_query(compile_type=None, columns_type=None, query=None):
 
 
 # function for generating pytest functions, useful for reporting and being able to update single snapshots
-def make_test_search(query_type):
+def make_test_search(query_type: list[str], query: Query):
     def test(snapshot):
-        assert create_search_query(query=query_type) == snapshot(
+        asdf = create_search_query(query=query)
+        assert asdf == snapshot(
             # using the configuration to name snapshot
             name=f"s{','.join(query_type)}"
         )
@@ -119,15 +135,15 @@ def make_test_search(query_type):
     return test
 
 
-for idx_query, query_type in enumerate(get_power_set([SCALAR, COLLECTION, ENTRY_WORD])):
+for idx_query, (query_type, q) in enumerate(get_queries([SCALAR, COLLECTION, ENTRY_WORD])):
     # trying to name tests so we have a chance of figuring out which case went wrong
-    globals()[f"test_search_{','.join(query_type)}"] = make_test_search(query_type)
+    globals()[f"test_search_{','.join(query_type)}"] = make_test_search(query_type, q)
 
 
 # function for generating pytest functions, useful for reporting and being able to update single snapshots
-def make_test_count(compile_type, columns_type, query_type):
+def make_test_count(compile_type, columns_type, query_type: list[str], q: Query):
     def test(snapshot):
-        assert create_count_query(compile_type=compile_type, columns_type=columns_type, query=query_type) == snapshot(
+        assert create_count_query(compile_type=compile_type, columns_type=columns_type, query=q) == snapshot(
             # using the configuration to name snapshot
             name=f"c{compile_type}_{columns_type}_{query_type}"
         )
@@ -138,8 +154,8 @@ def make_test_count(compile_type, columns_type, query_type):
 # generate test-functions and add to the global namespace, so pytest can report multiple failures or syrupy update single snapshots
 for idx_compile, compile_type in enumerate([ENTRY_WORD, SCALAR, COLLECTION]):
     for idx_columns, columns_type in enumerate([None, SCALAR, COLLECTION, ENTRY_WORD]):
-        for idx_query, query_type in enumerate(get_power_set([SCALAR, COLLECTION, ENTRY_WORD])):
+        for idx_query, (query_type, q) in enumerate(get_queries([SCALAR, COLLECTION, ENTRY_WORD])):
             # trying to name tests so we have a chance of figuring out which case went wrong
             globals()[f"test_count_compile-{compile_type}_columns-{columns_type}_query-{','.join(query_type)}"] = (
-                make_test_count(compile_type, columns_type, query_type)
+                make_test_count(compile_type, columns_type, query_type, q)
             )

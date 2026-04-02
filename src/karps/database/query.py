@@ -14,9 +14,10 @@ class SQLQuery:
         self.table = None
         # where
         self._op = "and"
-        self.clauses = []
-        # each element will generate a CTE and a JOIN
-        self.joins = {}
+        # each element will generate a CTE
+        self.joins = []
+        self.data_joins = {}
+        self.where_clause = None
         self._group_by = None
         self._order_by = None
         self._from = 0
@@ -35,14 +36,25 @@ class SQLQuery:
         self.inner_queries = queries
         return self
 
-    def join(self, field, alias=None, where: str | None = None, field_names: list[str] | None = None):
+    def join(
+        self,
+        field,
+        alias=None,
+        count: int | None = None,
+        where: str | None = None,
+        field_names: list[str] | None = None,
+    ):
         """
         field must be in a table with two columns, __parent_id and value
         a CTE and a join (LEFT or INNER, depending on if there is a query on <field>)
         """
         if not field_names:
             field_names = [field]
-        self.joins[field] = (alias, where, field_names)
+        if where:
+            # TODO should alias be used here also
+            self.joins.append((field, where, field_names, count))
+        else:
+            self.data_joins[field] = (alias, field_names)
         return self
 
     def group_by(self, fields: Sequence[str]):
@@ -58,7 +70,7 @@ class SQLQuery:
         return self
 
     def where(self, clause):
-        self.clauses.append(clause)
+        self.where_clause = clause
         return self
 
     def from_page(self, page):
@@ -69,45 +81,55 @@ class SQLQuery:
         self.size = size
         return self
 
-    def get_ctes(self, join) -> tuple[str | None, str | None]:
-        where = self.joins[join][1]
-        where_cte = None
-        if where:
-            where_cte = (
-                f"{join}__where AS ("
-                + (
-                    select([("__parent_id", None)])
-                    .from_table(f"{self.table}__{join}")
-                    .where(where)
-                    .group_by(["__parent_id"])
-                    .to_string()[0]
+    def get_ctes(self, count) -> list[str]:
+        ctes = []
+        for join in self.joins:
+            # query on collection field
+            where = join[1]
+            where_cte = None
+            if where:
+                # join[3] == count/idx used disambiguate between mulitple clauses on the same collection field
+                idx = join[3]
+                where_cte = (
+                    f"{join[0]}{f'_{idx}'}__where AS ("
+                    + (
+                        select([("__parent_id", None)])
+                        .from_table(f"{self.table}__{join[0]}")
+                        .where(where)
+                        .group_by(["__parent_id"])
+                        .to_string()[0]
+                    )
+                    + ")"
                 )
-                + ")"
-            )
+                ctes.append(where_cte)
 
-        if len(self.joins[join][2]) > 1:
-            concat_ws = f"CONCAT_WS('{FIELD_SEPARATOR}', {','.join([f'`{inner_field_name}`' for inner_field_name in self.joins[join][2]])})"
-        else:
-            concat_ws = self.joins[join][2][0]
-        data_cte = (
-            f"{join}__data AS ("
-            + (
-                select(
-                    [
-                        ("__parent_id", None),
-                        (
-                            f"GROUP_CONCAT({concat_ws} ORDER BY __parent_id SEPARATOR '{ELEMENT_SEPARATOR}')",
-                            self.joins[join][0] or join,
-                        ),
-                    ]
+        if not count:
+            for join_field, join in self.data_joins.items():
+                if len(join[1]) > 1:
+                    concat_ws = f"CONCAT_WS('{FIELD_SEPARATOR}', {','.join([f'`{inner_field_name}`' for inner_field_name in join[1]])})"
+                else:
+                    concat_ws = join[0] or join_field
+                # TODO add table name to name of cte?
+                data_cte = (
+                    f"{join_field}__data AS ("
+                    + (
+                        select(
+                            [
+                                ("__parent_id", None),
+                                (
+                                    f"GROUP_CONCAT({concat_ws} ORDER BY __parent_id SEPARATOR '{ELEMENT_SEPARATOR}')",
+                                    join[0] or join_field,
+                                ),
+                            ]
+                        )
+                        .from_table(f"{self.table}__{join_field}")
+                        .group_by(["__parent_id"])
+                        .to_string()[0]
+                    )
+                    + ")"
                 )
-                .from_table(f"{self.table}__{join}")
-                .group_by(["__parent_id"])
-                .to_string()[0]
-            )
-            + ")"
-        )
-        return where_cte, data_cte
+                ctes.append(data_cte)
+        return ctes
 
     def to_string(self, paged=False, top_level=True) -> tuple[str, str | None]:
         """
@@ -121,29 +143,22 @@ class SQLQuery:
                 str_ctes = []
                 ctes = []
                 # add needed CTE for outer query
-                for join in self.joins:
-                    qs = self.get_ctes(join)
-                    ctes.append((join, qs))
+                qs = self.get_ctes(count=count)
+                ctes.extend(qs)
 
                 # add needed CTEs for inner queries recursively
                 def recurse(q):
                     ctes = []
                     for _, inner_q in q.inner_queries:
-                        for join in inner_q.joins:
-                            qs = inner_q.get_ctes(join)
-                            ctes.append((join, qs))
+                        qs = inner_q.get_ctes(count=count)
+                        ctes.extend(qs)
                         ctes.extend(recurse(inner_q))
                     return ctes
 
                 ctes.extend(recurse(self))
 
-                for _, (where_cte, data_cte) in ctes:
-                    # query on collection field
-                    if where_cte:
-                        str_ctes.append(where_cte)
-                    # data fetching does not need to be done when counting
-                    if not count:
-                        str_ctes.append(data_cte)
+                for cte in ctes:
+                    str_ctes.append(cte)
                 if str_ctes:
                     s = "WITH " + ", ".join(str_ctes) + " "
 
@@ -186,29 +201,18 @@ class SQLQuery:
             else:
                 raise RuntimeError("error in SQL generation")
 
-            # for certain queries we are working against derived tables
-            if self.joins:
-                # for join in inner_q.joins:
-                #     qs = inner_q.get_ctes(join)
-                #     ctes.append((join, qs))
+            table_prefix = f"`{self.table}`." if self.table else ""
 
-                table_prefix = f"`{self.table}`." if self.table else ""
-                for join_field in self.joins:
+            # use left joins for data fetching (skip when just counting rows)
+            if not count:
+                # add in joins needed for data from CTE:s
+                for join_field in self.data_joins:
                     # use alias or field name
-                    name = self.joins[join_field][0] or join_field
-                    if self.joins[join_field][1]:
-                        self.clauses.append(
-                            f"EXISTS (SELECT 1 FROM `{name}__where` WHERE {table_prefix}__id = __parent_id)"
-                        )
-                        # s += f" JOIN `{name}__where` ON `{name}__where`.__parent_id = {table_prefix}__id"
+                    name = self.data_joins[join_field][0] or join_field
+                    s += f" LEFT JOIN `{name}__data` ON `{name}__data`.__parent_id = {table_prefix}__id"
 
-                    # use left joins for data fetching (skip when just counting rows)
-                    if not count:
-                        s += f" LEFT JOIN `{name}__data` ON `{name}__data`.__parent_id = {table_prefix}__id"
-
-            # where for queries on data in columns, not joins
-            if self.clauses:
-                s += f" WHERE {f' {self._op} '.join(self.clauses)}"
+            if self.where_clause:
+                s += f" WHERE {self.where_clause.replace('TABLE_PREFIX', table_prefix)}"
 
             if self._group_by:
                 s += f" GROUP BY {self._group_by}"
