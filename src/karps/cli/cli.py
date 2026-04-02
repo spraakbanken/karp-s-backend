@@ -62,6 +62,8 @@ def restart_workers(config: Env):
 
 
 def reconfigure(main_dir: Path, repo):
+    for path in glob.glob(str(main_dir / "resources/*")):
+        Path(path).unlink()
     for path in glob.glob(str(main_dir / "incoming/*")):
         resource_dir = Path(path)
         if resource_dir.is_dir():
