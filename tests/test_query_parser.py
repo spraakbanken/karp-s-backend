@@ -93,12 +93,12 @@ def test_collection_field_multi_clause():
     Test that query will get the correct WHERE clause when searching in
     field3 - with collection: true - twice in a logical query.
     """
-    ast = parse_query("or(equals|field3|value1||equals|field3|value2)")
+    ast = parse_query("or(equals|field3|value0||equals|field3|value1)")
     fields, (query, params), collection_queries = get_query(dummy_config, "", ast)
     q_out = "EXISTS (SELECT 1 FROM `field3_{idx}__where` WHERE TABLE_PREFIX__id = __parent_id)"
     assert query == f"{q_out.format(idx=0)} OR {q_out.format(idx=1)}"
     assert params == ()
     assert len(collection_queries) == 2
-    # for idx in range(2):
-    #     assert collection_queries[idx] == ("field3", idx, f"`field3` = 'value{idx}'")
+    for idx in range(2):
+        assert collection_queries[idx] == ("field3", idx, ("`field3` = %s", (f"value{idx}",)))
     assert fields == {"field3"}
