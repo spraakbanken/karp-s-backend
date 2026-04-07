@@ -1,6 +1,7 @@
 from typing import Sequence
 
 from karps.config import ResourceConfig
+from karps.query.query import ReadyQuery
 
 
 ELEMENT_SEPARATOR = "\u001f"
@@ -41,7 +42,7 @@ class SQLQuery:
         field,
         alias=None,
         count: int | None = None,
-        where: str | None = None,
+        where: ReadyQuery | None = None,
         field_names: list[str] | None = None,
     ):
         """
@@ -81,27 +82,27 @@ class SQLQuery:
         self.size = size
         return self
 
-    def get_ctes(self, count) -> list[str]:
+    def get_ctes(self, count) -> tuple[list[str], list[str]]:
         ctes = []
+        params = []
         for join in self.joins:
             # query on collection field
             where = join[1]
             where_cte = None
+            q_str, inner_params = (
+                select([("__parent_id", None)])
+                .from_table(f"{self.table}__{join[0]}")
+                .where(where)
+                .group_by(["__parent_id"])
+                .to_string()[0]
+            )
+
             if where:
                 # join[3] == count/idx used disambiguate between mulitple clauses on the same collection field
                 idx = join[3]
-                where_cte = (
-                    f"{join[0]}{f'_{idx}'}__where AS ("
-                    + (
-                        select([("__parent_id", None)])
-                        .from_table(f"{self.table}__{join[0]}")
-                        .where(where)
-                        .group_by(["__parent_id"])
-                        .to_string()[0]
-                    )
-                    + ")"
-                )
+                where_cte = f"{join[0]}{f'_{idx}'}__where AS (" + q_str + ")"
                 ctes.append(where_cte)
+                params.extend(inner_params)
 
         if not count:
             for join_field, join in self.data_joins.items():
@@ -110,57 +111,63 @@ class SQLQuery:
                 else:
                     concat_ws = join[0] or join_field
                 # TODO add table name to name of cte?
-                data_cte = (
-                    f"{join_field}__data AS ("
-                    + (
-                        select(
-                            [
-                                ("__parent_id", None),
-                                (
-                                    f"GROUP_CONCAT({concat_ws} ORDER BY __parent_id SEPARATOR '{ELEMENT_SEPARATOR}')",
-                                    join[0] or join_field,
-                                ),
-                            ]
-                        )
-                        .from_table(f"{self.table}__{join_field}")
-                        .group_by(["__parent_id"])
-                        .to_string()[0]
+                q_str, inner_params = (
+                    select(
+                        [
+                            ("__parent_id", None),
+                            (
+                                f"GROUP_CONCAT({concat_ws} ORDER BY __parent_id SEPARATOR '{ELEMENT_SEPARATOR}')",
+                                join[0] or join_field,
+                            ),
+                        ]
                     )
-                    + ")"
+                    .from_table(f"{self.table}__{join_field}")
+                    .group_by(["__parent_id"])
+                    .to_string()[0]
                 )
+                data_cte = f"{join_field}__data AS (" + q_str + ")"
                 ctes.append(data_cte)
-        return ctes
+                params.extend(inner_params)
+        return ctes, params
 
-    def to_string(self, paged=False, top_level=True) -> tuple[str, str | None]:
+    def to_string(self, paged=False, top_level=True) -> tuple[ReadyQuery, ReadyQuery | None]:
         """
-        builds the query from the given parameters
+        Builds the query from the given parameters
+        Returns a tuple consisting of -
+        [0] - a tuple of data fetching (query, param)
+        [1] - None if paged=False or a tuple of query statistics / count (query, param)
         """
 
         # main select stmt
-        def inner(count=False) -> str:
+        def inner(count=False) -> ReadyQuery:
             s = ""
+            params = []
             if top_level:
-                str_ctes = []
                 ctes = []
                 # add needed CTE for outer query
-                qs = self.get_ctes(count=count)
+                qs, inner_params = self.get_ctes(count=count)
                 ctes.extend(qs)
+                params.extend(inner_params)
 
                 # add needed CTEs for inner queries recursively
                 def recurse(q):
                     ctes = []
+                    params = []
                     for _, inner_q in q.inner_queries:
-                        qs = inner_q.get_ctes(count=count)
+                        qs, inner_params = inner_q.get_ctes(count=count)
                         ctes.extend(qs)
-                        ctes.extend(recurse(inner_q))
-                    return ctes
+                        params.extend(inner_params)
+                        inner_qs, inner_params = recurse(inner_q)
+                        ctes.extend(inner_qs)
+                        params.extend(inner_params)
+                    return ctes, params
 
-                ctes.extend(recurse(self))
+                inner_qs, inner_params = recurse(self)
+                ctes.extend(inner_qs)
+                params.extend(inner_params)
 
-                for cte in ctes:
-                    str_ctes.append(cte)
-                if str_ctes:
-                    s = "WITH " + ", ".join(str_ctes) + " "
+                if ctes:
+                    s = "WITH " + ", ".join(ctes) + " "
 
             if count:
                 selection = "COUNT(*)"
@@ -193,11 +200,12 @@ class SQLQuery:
             if self.table:
                 s += f"SELECT {selection} FROM `{self.table}`"
             elif self.inner_queries:
-                s += (
-                    f"SELECT {selection} FROM ("
-                    + " UNION ALL ".join([s.to_string(top_level=False)[0] for _, s in self.inner_queries])
-                    + ") as innerq"
-                )
+                queries: list[str] = []
+                for _, inner_query in self.inner_queries:
+                    q, inner_params = inner_query.to_string(top_level=False)[0]
+                    queries.append(q)
+                    params.extend(inner_params)
+                s += f"SELECT {selection} FROM (" + " UNION ALL ".join(queries) + ") as innerq"
             else:
                 raise RuntimeError("error in SQL generation")
 
@@ -212,7 +220,9 @@ class SQLQuery:
                     s += f" LEFT JOIN `{name}__data` ON `{name}__data`.__parent_id = {table_prefix}__id"
 
             if self.where_clause:
-                s += f" WHERE {self.where_clause.replace('TABLE_PREFIX', table_prefix)}"
+                where_str, where_params = self.where_clause
+                s += f" WHERE {where_str.replace('TABLE_PREFIX', table_prefix)}"
+                params.extend(where_params)
 
             if self._group_by:
                 s += f" GROUP BY {self._group_by}"
@@ -231,7 +241,7 @@ class SQLQuery:
             if not count and top_level and self.size is not None:
                 s += f" LIMIT {self.size} OFFSET {self._from}"
 
-            return s
+            return s, tuple(params)
 
         return inner(), inner(count=True) if paged and top_level else None
 

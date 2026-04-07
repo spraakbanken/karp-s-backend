@@ -60,6 +60,8 @@ def parse_query(q: str | None) -> Query:
             else:
                 if isinstance(ast.arg, list):
                     arg = "".join(ast.arg)
+                    # unescape string values
+                    arg = arg.replace('\\"', '"')
                 else:
                     arg = ast.arg
                 return SubQuery(op=ast.op, field=ast.field, value=arg)
@@ -75,9 +77,14 @@ def get_epsilon(q_number):
     return 0.01
 
 
+# a tuple of str and a tuple[Any], str must contain as many %s as there are elements in the inner tuple
+# used for parameterization of queries
+type ReadyQuery = tuple[str, tuple[Any, ...]]
+
+
 def get_query(
     main_config: MainConfig, word_column: str, outer_q: Query
-) -> tuple[set[str], str | None, list[tuple[str, int, str]]]:
+) -> tuple[set[str], ReadyQuery | None, list[tuple[str, int, ReadyQuery]]]:
     """
     Translates a query tree into an SQL WHERE clause.
 
@@ -89,24 +96,31 @@ def get_query(
         return set(), None, []
 
     fields = set()
-    main_query: str
     # from collections
-    collection_queries: list[tuple[str, int, str]] = []
+    # TODO currently collections_queries are single clause which could be shown in the type system
+    collection_queries: list[tuple[str, int, ReadyQuery]] = []
 
     collection_field_count = defaultdict(int)
 
-    def recurse(q) -> tuple[str, bool]:
+    def recurse(q) -> tuple[ReadyQuery, bool]:
+        """
+        Returns a tuple of
+        - the query tuple - a str and its params
+        - a boolean used to know wether to wrap query in parentheses, only used inside recursion
+        """
         if isinstance(q, LogicalQuery):
             parts = []
+            params = []
             for inner_q in q.clauses:
-                a, complex = recurse(inner_q)
+                (a, inner_params), complex = recurse(inner_q)
                 if complex:
                     a = f"({a})"
                 parts.append(a)
+                params.extend(inner_params)
             if q.op == "NOT":
-                return f"NOT {parts[0]}", True
+                return (f"NOT {parts[0]}", tuple(params)), True
             else:
-                return f" {q.op} ".join(parts), True
+                return (f" {q.op} ".join(parts), tuple(params)), True
         elif isinstance(q, SubQuery):
             # If the field is entry_word / entryWord, use the specified word_column, as it can differ across resources.
             if q.field in ["entry_word", "entryWord"]:
@@ -115,18 +129,21 @@ def get_query(
                 field = q.field
             fields.add(field)
             field_type: str = main_config.fields[field].type
-            where_part = to_where_clause(field, field_type, q)
+            where_part, params = to_where_clause(field, field_type, q)
             if main_config.fields[field].collection:
                 count = collection_field_count[field]
-                collection_queries.append((field, count, where_part))
+                collection_queries.append((field, count, (where_part, (params,))))
 
                 # TABLE_PREFIX will be replaced
                 where_part = (
                     f"EXISTS (SELECT 1 FROM `{field}{f'_{count}'}__where` WHERE TABLE_PREFIX__id = __parent_id)"
                 )
+                params = ()
                 collection_field_count[field] += 1
+            else:
+                params = (params,)
 
-            return where_part, False
+            return (where_part, params), False
         else:
             raise RuntimeError("cannot happen")
 
@@ -135,43 +152,49 @@ def get_query(
     return fields, main_query, collection_queries
 
 
-def to_where_clause(field, field_type, q) -> str:
+def to_where_clause(field: str, field_type: str, q: SubQuery) -> tuple[str, Any]:
     if field_type == "float" or field_type == "integer":
+        val = q.value
         if q.op == "equals":
-            return f"ABS(`{field}` - {q.value}) < {get_epsilon(q.value)}"
+            return f"ABS(`{field}` - %s) < {get_epsilon(q.value)}", q.value
         elif q.op == "lt":
-            op_arg = f"< {q.value} + {get_epsilon(q.value)}"
+            op_arg = f"< %s + {get_epsilon(q.value)}"
         elif q.op == "lte":
-            op_arg = f"<= {q.value} + {get_epsilon(q.value)}"
+            op_arg = f"<= %s + {get_epsilon(q.value)}"
         elif q.op == "gt":
-            op_arg = f"> {q.value} - {get_epsilon(q.value)}"
+            op_arg = f"> %s - {get_epsilon(q.value)}"
         elif q.op == "gte":
-            op_arg = f">= {q.value} - {get_epsilon(q.value)}"
+            op_arg = f">= %s - {get_epsilon(q.value)}"
         else:
             raise errors.UserError("unsupported operator for numeric values")
+        return f"`{field}` {op_arg}", val
     else:
-        # escape ' with a backslash, since we use ' for strings in MariaDB
-        val = cast(str, q.value).replace("'", "\\'")
+        val = cast(str, q.value)
+
+        # TODO need to escape values in the LIKE searches
+        # val = val.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         if q.op == "equals":
-            op_arg = f"= '{val}'"
+            op = "="
         elif q.op == "startswith":
-            op_arg = f"LIKE '{val}%'"
+            op = "LIKE"
+            val = f"{val}%"
         elif q.op == "endswith":
-            op_arg = f"LIKE '%{val}'"
+            op = "LIKE"
+            val = f"%{val}"
         elif q.op == "contains":
-            op_arg = f"LIKE '%{val}%'"
+            op = "LIKE"
+            val = f"%{val}%"
         elif q.op == "regexp":
-            op_arg = f"REGEXP '{val}'"
-        # TODO test these with integers
+            op = "REGEXP"
         elif q.op == "lt":
-            op_arg = f"< '{val}'"
+            op = "<"
         elif q.op == "lte":
-            op_arg = f"<= '{val}'"
+            op = "<="
         elif q.op == "gt":
-            op_arg = f"> '{val}'"
+            op = ">"
         elif q.op == "gte":
-            op_arg = f">= '{val}'"
+            op = ">="
         else:
             # this should not happen since the query parser would not accept other operators
             raise errors.InternalError("unknown operator in query")
-    return f"`{field}` {op_arg}"
+        return f"`{field}` {op} %s", val

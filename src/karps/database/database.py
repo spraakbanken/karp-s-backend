@@ -36,7 +36,7 @@ def get_cursor(config: Env) -> Iterator[MySQLCursor]:
     cursor = None
     try:
         # When connection.cursor is called without arguments, a MySQLCursor-instance is returned
-        #   Explicitly casting improloggves type hints from cursor-methods such as fetchall
+        # Explicitly casting improves type hints from cursor-methods such as fetchall
         cursor = cast(MySQLCursor, connection.cursor())
         yield cursor
     finally:
@@ -45,13 +45,15 @@ def get_cursor(config: Env) -> Iterator[MySQLCursor]:
         connection.close()
 
 
-def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
+def fetchall(cursor: MySQLCursor, sql: str, params: tuple[Any]) -> tuple[list[str], list[tuple]]:
     execute_took = "-1"
     fetchall_took = "-1"
     warnings = ()
+    used_sql = None
     try:
         bf = time.time()
-        cursor.execute(sql)
+        cursor.execute(sql, params)
+        used_sql = cursor.statement  # for logging purposes
         execute_took = time.time() - bf
         columns = [desc[0] for desc in cursor.description or ()]
         bf = time.time()
@@ -67,7 +69,7 @@ def fetchall(cursor: MySQLCursor, sql: str) -> tuple[list[str], list[tuple]]:
     finally:
         sql_logger.info(
             "",
-            {"q": sql, "execute_took": execute_took, "fetchall_took": fetchall_took, "warnings": warnings},
+            {"q": used_sql or sql, "execute_took": execute_took, "fetchall_took": fetchall_took, "warnings": warnings},
             exc_info=sys.exc_info()[0],  # pyright: ignore[reportArgumentType]
         )
 
@@ -298,7 +300,8 @@ def run_paged_searches(
     with get_cursor(config) as cursor:
         for _, count_query in sql_queries:
             if count_query:
-                _, count_result = fetchall(cursor, count_query)
+                (count_query, params) = count_query
+                _, count_result = fetchall(cursor, count_query, params)
                 count_res.append(count_result[0][0])
 
     # if the query uses paging, be must add the limits from user supplied _from and size
@@ -343,9 +346,9 @@ def run_paged_searches(
                 # yield empty placeholder
                 yield None
             else:
-                sql_query = resource_query[0]
+                (sql_query, params) = resource_query[0]
                 with get_cursor(config) as cursor:
-                    result_columns, result = fetchall(cursor, sql_query)
+                    result_columns, result = fetchall(cursor, sql_query, params)
                 new_result = []
                 for row in result:
                     new_row = []
