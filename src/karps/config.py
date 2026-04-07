@@ -220,6 +220,9 @@ def format_hit(
 
 
 def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
+    """
+    Used in statistics for compile/column param. Queries are allowed to use fields not available in all resources
+    """
     for resource in resources:
         for field in fields:
             if field not in ("resource_id", "entry_word") and field not in resource.field_names:

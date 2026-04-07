@@ -128,6 +128,8 @@ def get_query(
             else:
                 field = q.field
             fields.add(field)
+            if field not in main_config.fields:
+                raise errors.UserError(f"{field} does not exist in system")
             field_type: str = main_config.fields[field].type
             where_part, params = to_where_clause(field, field_type, q)
             if main_config.fields[field].collection:
