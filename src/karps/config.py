@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import functools
 import os
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Optional, Sequence
+from typing import Any, Iterable, Iterator, Sequence
 import environs
 import glob
 
@@ -64,12 +64,18 @@ class ConfigField(BaseModel):
         ..., description="(Machine) name of the field. This name is used by resources to list the available fields."
     )
     type: str = PydanticField(..., description="Type of the field, can be text, integer or float or table.")
-    collection: Optional[bool] = PydanticField(default=False, description="If `true`, the field is a list of `type`.")
+    collection: bool = PydanticField(default=False, description="If `true`, the field is a list of `type`.")
     label: MultiLang | None = PydanticField(
         default=None, description="Label for the field, can be in mulitple languages."
     )
     fields: dict[str, "Field"] = PydanticField(
         default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
+    )
+    categories: list[str] = PydanticField(
+        default_factory=list, description="If set, a list of possible values for this field."
+    )
+    category_labels: dict[str, MultiLang] = PydanticField(
+        default_factory=dict, description="For fields with categories, labels for each value (optional)."
     )
 
     def model_post_init(self, _):
