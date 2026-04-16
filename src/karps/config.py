@@ -71,11 +71,12 @@ class ConfigField(BaseModel):
     fields: dict[str, "Field"] = PydanticField(
         default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
     )
-    categories: list[str] = PydanticField(
-        default_factory=list, description="If set, a list of possible values for this field."
+    categories: list[str] | None = PydanticField(
+        default=None, description="If set, a list of possible values for this field."
     )
-    category_labels: dict[str, MultiLang] = PydanticField(
-        default_factory=dict, description="For fields with categories, labels for each value (optional)."
+    category_labels: dict[str, MultiLang] | None = PydanticField(
+        default=None,
+        description="For fields with categories, labels for each value (optional, even if categories is given).",
     )
 
     def model_post_init(self, _):
@@ -88,6 +89,10 @@ class ConfigField(BaseModel):
         data = handler(self)
         if data.get("fields") == {}:
             data.pop("fields", None)
+        if data.get("categories") is None:
+            data.pop("categories", None)
+        if data.get("category_labels") is None:
+            data.pop("category_labels", None)
         return data
 
 
