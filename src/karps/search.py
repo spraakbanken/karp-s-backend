@@ -6,6 +6,7 @@ from karps.config import (
     ResourceConfig,
     format_hit,
     ensure_fields_exist,
+    get_bool_fields,
     get_collection_fields,
     get_table_fields,
 )
@@ -39,6 +40,7 @@ def search(
         s,
         size=size,
         _from=_from,
+        bool_fields=get_bool_fields(main_config, used_resources),
         collection_fields=get_collection_fields(main_config, used_resources),
         table_fields=get_table_fields(main_config, used_resources),
     )
@@ -164,6 +166,7 @@ def _count_subquery(main_config, env, resources, query, compile, column, sort, r
             env,
             [agg_s],
             CountRequest(compile=compile, columns=column),
+            bool_fields=get_bool_fields(main_config, resources),
             collection_fields=get_collection_fields(main_config, resources),
             table_fields=get_table_fields(main_config, resources),
         )

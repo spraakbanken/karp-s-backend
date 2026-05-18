@@ -170,6 +170,12 @@ def to_where_clause(field: str, field_type: str, q: SubQuery) -> tuple[str, Any]
         else:
             raise errors.UserError("unsupported operator for numeric values")
         return f"`{field}` {op_arg}", val
+    if field_type == "bool":
+        if q.op != "equals":
+            raise errors.UserError("unsupported operator for boolean values")
+        if q.value not in ["true", "false"]:
+            raise errors.UserError("unsupported argument for boolean values (must be true / false)")
+        return f"`{field}` = %s", "1" if q.value == "true" else "0"
     else:
         val = cast(str, q.value)
 

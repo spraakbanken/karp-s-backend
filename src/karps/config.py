@@ -240,6 +240,15 @@ def ensure_fields_exist(resources: list[ResourceConfig], fields: Iterable[str]):
                 raise errors.UserError(f"{field} does not exist in {resource.resource_id}")
 
 
+def get_bool_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> Iterable[str]:
+    fields: set[str] = set()
+    for resource in resources:
+        for resource_field in resource.fields:
+            if main_config.fields[resource_field.name].type == "bool":
+                fields.add(resource_field.name)
+    return fields
+
+
 def get_collection_fields(main_config: MainConfig, resources: list[ResourceConfig]) -> Iterable[str]:
     fields: set[str] = set()
     for resource in resources:

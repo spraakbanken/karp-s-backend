@@ -268,6 +268,7 @@ def run_searches(
     config: Env,
     sql_queries: Iterable[SQLQuery],
     request: CountRequest,
+    bool_fields: Iterable = (),
     collection_fields: Iterable = (),
     table_fields: dict[str, list[str]] = {},  # TODO default val
 ) -> Iterator[tuple[list[str], list[list[Any]]]]:
@@ -275,6 +276,7 @@ def run_searches(
         config,
         sql_queries,
         paged=False,
+        bool_fields=bool_fields,
         collection_fields=collection_fields,
         table_fields=table_fields,
         request=request,
@@ -289,6 +291,7 @@ def run_paged_searches(
     size: int = 10,
     _from: int = 0,
     paged=True,
+    bool_fields: Iterable = (),
     collection_fields: Iterable = (),
     table_fields: dict[str, list[str]] = {},  # TODO default val
     request: Request = Request(),
@@ -385,11 +388,18 @@ def run_paged_searches(
                         elif column in collection_fields:
                             vals = row[i].split(ELEMENT_SEPARATOR) if row[i] else []
                             if column in table_fields:
+                                # TODO does not parse booleans
                                 new_row.append(create_table_rows(table_fields[column], vals))
                             else:
+                                if column in bool_fields:
+                                    vals = [val == 1 for val in vals]
                                 new_row.append(vals)
                         else:
-                            new_row.append(row[i])
+                            res = row[i]
+                            if column in bool_fields:
+                                # parse boolean
+                                res = res == 1
+                            new_row.append(res)
                     new_result.append(new_row)
                 yield (result_columns, new_result)
 
