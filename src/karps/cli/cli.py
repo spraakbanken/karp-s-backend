@@ -1,6 +1,7 @@
 import glob
 from io import TextIOWrapper
 import logging
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -52,8 +53,16 @@ def main():
 
 
 def restart_workers(config: Env):
+    env = os.environ.copy()
+
+    # if the cli is running inside and env, set VIRTUAL_ENV in the subprocess environment
+    if sys.prefix != sys.base_prefix:
+        env["VIRTUAL_ENV"] = sys.prefix
+
     # will restart all gunicorn workers
-    p = subprocess.run(["make", "reload"], cwd=config.base_path, capture_output=True, check=False, encoding="utf-8")
+    p = subprocess.run(
+        ["make", "reload"], cwd=config.base_path, capture_output=True, check=False, encoding="utf-8", env=env
+    )
     if p.returncode:
         logger.warning("failed to reload karp-s-backend")
         raise RuntimeError(f"stdout: {p.stdout}, stderr: {p.stderr}")
