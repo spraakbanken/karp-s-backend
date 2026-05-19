@@ -4,6 +4,8 @@ import subprocess
 
 class GitRepo:
     def __init__(self, repo_path: Path):
+        # check that the git repo is initialized
+        self.initialized = (repo_path / ".git").is_dir()
         self.repo_path = repo_path
 
     def _run(self, *args):
@@ -20,10 +22,15 @@ class GitRepo:
                 raise RuntimeError("Error when calling Git", result.stdout + ", " + result.stderr)
 
     def init(self):
-        self._run("init")
-        self._run("commit", "--message", "init", "--allow-empty")
+        if not self.initialized:
+            self._run("init")
+            self._run("commit", "--message", "init", "--allow-empty")
+        self.initialized = True
 
     def commit_all(self, msg=None, allow_empty=True):
+        # make sure that the repo is initialized
+        self.init()
+
         self._run("add", "--all")
         commit_args = []
         if allow_empty:
