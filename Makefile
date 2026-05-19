@@ -1,5 +1,12 @@
+# setup uv
+UV_EXISTS := $(shell command -v uv 2>/dev/null)
 
-UV = uv run
+# if a venv is active, use --active to ignore any mismatch between current venv and uv project environment path
+ifneq (${VIRTUAL_ENV},)
+ACTIVE := --active
+endif
+
+UV = uv run $(ACTIVE)
 
 .PHONY: help
 help:
@@ -25,22 +32,23 @@ help:
 dev: .installed
 install-dev: .installed
 
-UV_EXISTS := $(shell command -v uv 2>/dev/null)
+
 .installed: uv.lock pyproject.toml
 ifeq ($(UV_EXISTS),)
+	# uv does not exist
 	ifeq (${VIRTUAL_ENV},)
+		# no virtual env exists
 		@echo "Set up either uv or a virtual environment to install with this Makefile. See README.md"
 		@false
 	else
+		# if venv is active but uv is not found, install uv
 		pip install uv
-		export UV_PROJECT_ENVIRONMENT=$VIRTUAL_ENV
 	endif
 else
 	@:
 endif
-	pip install --upgrade pip
-	pip install uv
-	uv sync --group prod
+	# use $(ACTIVE) to use the active venv
+	uv sync $(ACTIVE) --group prod
 	@touch $@
 
 run:
