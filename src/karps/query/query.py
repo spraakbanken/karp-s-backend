@@ -154,6 +154,13 @@ def get_query(
     return fields, main_query, collection_queries
 
 
+def _escape_wildcards(val: str):
+    """
+    MariaDB uses _ and & as wildcards when using the LIKE operator
+    """
+    return val.replace("%", "\\%").replace("_", "\\_")
+
+
 def to_where_clause(field: str, field_type: str, q: SubQuery) -> tuple[str, Any]:
     if field_type == "float" or field_type == "integer":
         val = q.value
@@ -185,13 +192,13 @@ def to_where_clause(field: str, field_type: str, q: SubQuery) -> tuple[str, Any]
             op = "="
         elif q.op == "startswith":
             op = "LIKE"
-            val = f"{val}%"
+            val = f"{_escape_wildcards(val)}%"
         elif q.op == "endswith":
             op = "LIKE"
-            val = f"%{val}"
+            val = f"%{_escape_wildcards(val)}"
         elif q.op == "contains":
             op = "LIKE"
-            val = f"%{val}%"
+            val = f"%{_escape_wildcards(val)}%"
         elif q.op == "regexp":
             op = "REGEXP"
         elif q.op == "lt":
