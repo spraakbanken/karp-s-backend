@@ -150,7 +150,10 @@ def count(
     total_row = []
     _count_subquery(main_config, env, resources, query, [], ("resource_id", "_count"), None, total_row)
 
-    return final_headers, rows, ["-"] + total_row[0]
+    # create the final total row, with "-" for each compile column
+    total = ["-" for _ in compile] + total_row[0]
+
+    return final_headers, rows, total
 
 
 def _count_subquery(main_config, env, resources, query, compile, column, sort, rows):
