@@ -41,9 +41,12 @@ def get_env() -> Env:
         "database": env.str("DB_DATABASE"),
     }
 
+    MISSING = object()
+
     def _set_if_present(kwargs, var_name, parser):
-        if var_name in os.environ:
-            kwargs[var_name.lower()] = parser(var_name)
+        val = parser(var_name, MISSING)
+        if val != MISSING:
+            kwargs[var_name.lower()] = val
 
     _set_if_present(kwargs, "BASE_PATH", env.str)
     _set_if_present(kwargs, "LOGGING_DIR", env.str)
