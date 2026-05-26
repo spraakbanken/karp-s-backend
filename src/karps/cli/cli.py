@@ -40,7 +40,11 @@ def main():
     elif sys.argv[1] == "reload":
         restart_workers(config)
     elif sys.argv[1] == "reconfigure":
-        reconfigure(main_dir, repo)
+        ignore_labels = False
+        if len(sys.argv) > 2 and sys.argv[2] == "--ignore-labels":
+            ignore_labels = True
+        # if ignore_labels - ignore if incoming resources conflict on the label of fields
+        reconfigure(main_dir, repo, ignore_labels=ignore_labels)
         restart_workers(config)
     elif sys.argv[1] == "remove":
         resource_id = sys.argv[2]
@@ -70,17 +74,17 @@ def restart_workers(config: Env):
         logger.info("karp-s-backend reloaded")
 
 
-def reconfigure(main_dir: Path, repo):
+def reconfigure(main_dir: Path, repo, ignore_labels=False):
     for path in glob.glob(str(main_dir / "resources/*")):
         Path(path).unlink()
     for path in glob.glob(str(main_dir / "incoming/*")):
         resource_dir = Path(path)
         if resource_dir.is_dir():
-            process_resource(main_dir, resource_dir, repo)
+            process_resource(main_dir, resource_dir, repo, ignore_labels=ignore_labels)
 
 
 def process_resource(
-    main_dir: Path, resource_dir: Path, repo: GitRepo, done_file: Path | None = None, background=False
+    main_dir: Path, resource_dir: Path, repo: GitRepo, done_file: Path | None = None, background=False, ignore_labels=False
 ):
     # this backend instance's field configuration
     backend_fields_config = main_dir / "fields.yaml"
@@ -95,7 +99,7 @@ def process_resource(
         resource_id = _update_config(main_dir / "config.yaml", karps_resource_config, global_config)
         # this merges all the current resource field configs into one big file, taking into account
         # that fields.yaml may already contain translated labels etc
-        _update_fields(resource_id, backend_fields_config, resource_fields_config)
+        _update_fields(resource_id, backend_fields_config, resource_fields_config, ignore_labels=ignore_labels)
         # finally copy the resource config to the resource dir
         shutil.copy(karps_resource_config, main_dir / "resources" / f"{resource_id}.yaml")
     except Exception as e:
@@ -194,7 +198,7 @@ def _update_config(config_filename: Path, resource_filename: Path, global_filena
     return cast(str, resource_obj["resource_id"])
 
 
-def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file: Path):
+def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file: Path, ignore_labels=False):
     """
     when running, fields.yaml are created with information about the
     fields that are not already present in the backend. Take this file
@@ -228,9 +232,8 @@ def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file:
                     # no changes to other resources are allowed
                     if (
                         new_field["type"] != field_lookup[new_field["name"]]["type"]
-                        or new_field.get("collection", False)
-                        != field_lookup[new_field["name"]].get("collection", False)
-                        or (new_label and new_label != field_lookup[new_field["name"]].get("label"))
+                        or new_field.get("collection", False) != field_lookup[new_field["name"]].get("collection", False)
+                        or (not ignore_labels and (new_label and new_label != field_lookup[new_field["name"]].get("label")))
                     ):
                         raise ValueError(
                             f"There already exists a field called {new_field['name']} with different settings"
