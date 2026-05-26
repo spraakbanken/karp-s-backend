@@ -39,9 +39,9 @@ Add dependencies using `uv add [--dev] <dep>`, remove using `uv remove <dep>`.
 
 Upgrade existing dependencies using `uv lock --upgrade`.
 
-## Typechecking
+## Type checking
 
-This code is type-checked using basedpyright, see `pyrightconfig.json` for settings.
+This code is type checked using basedpyright, see `pyrightconfig.json` for settings.
 basedpyright is installed in the venv and is used instead of Pyright because
 Pyright requires NodeJS. There is also a language server for basedpyright that
 can be used in your editor for completions and highlighting.
