@@ -81,6 +81,9 @@ class ConfigField(BaseModel):
         default=None,
         description="For fields with categories, labels for each value (optional, even if categories is given).",
     )
+    protected_metadata: bool = PydanticField(
+        default=False, description="The field is only available for users with access"
+    )
 
     def model_post_init(self, _):
         if self.label is None:
@@ -96,6 +99,7 @@ class ConfigField(BaseModel):
             data.pop("categories", None)
         if data.get("category_labels") is None:
             data.pop("category_labels", None)
+        data.pop("protected_metadata", None)
         return data
 
 

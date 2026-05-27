@@ -94,21 +94,23 @@ def process_resource(
     # this backend instance's field configuration
     backend_fields_config = main_dir / "fields.yaml"
     # general resource information
-    karps_resource_config = resource_dir / "resource.yaml"
+    karps_resource_config_path = resource_dir / "resource.yaml"
     # resource fields information
     resource_fields_config = resource_dir / "fields.yaml"
     # other information about resource, for example tags
     global_config = resource_dir / "global.yaml"
     try:
         # this updates config.yaml with new information from the resource
-        resource_id, protected_metadata = _update_config(main_dir / "config.yaml", karps_resource_config, global_config)
+        resource_id, protected_metadata, karps_resource_config = _update_config(
+            main_dir / "config.yaml", karps_resource_config_path, global_config
+        )
         # this merges all the current resource field configs into one big file, taking into account
         # that fields.yaml may already contain translated labels etc
         _update_fields(
             resource_id, backend_fields_config, resource_fields_config, protected_metadata, ignore_labels=ignore_labels
         )
-        # finally copy the resource config to the resource dir
-        shutil.copy(karps_resource_config, main_dir / "resources" / f"{resource_id}.yaml")
+        # def _add_config(main_dir, resource_id, config, protected_metadata):
+        _add_config(main_dir, resource_id, karps_resource_config, protected_metadata)
     except Exception as e:
         if background:
             if done_file:
@@ -194,7 +196,9 @@ def _read(filename: Path) -> dict[str, object]:
         return config or {}
 
 
-def _update_config(config_filename: Path, resource_filename: Path, global_filename: Path) -> tuple[str, bool]:
+def _update_config(
+    config_filename: Path, resource_filename: Path, global_filename: Path
+) -> tuple[str, bool, dict[str, object]]:
     """
     Reads the input yaml fieles (Karp-s main config, incoming resource config and global config from pipeline).
 
@@ -207,7 +211,12 @@ def _update_config(config_filename: Path, resource_filename: Path, global_filena
     # open config.yaml for writing
     with open(config_filename, "w") as fp_out:
         _add_tags(config_obj, resource_obj, karps_config, fp_out)
-    return cast(str, resource_obj["resource_id"]), cast(bool, resource_obj.get("protected_metadata", False))
+
+    return (
+        cast(str, resource_obj["resource_id"]),
+        cast(bool, resource_obj.get("protected_metadata", False)),
+        resource_obj,
+    )
 
 
 def _update_fields(
@@ -241,7 +250,8 @@ def _update_fields(
 
             if protected_metadata:
                 # if metadata is protected, use resource ID as a kind of namespace
-                new_field["name"] = resource_id + "_" + new_field["name"]
+                new_field["name"] = _use_namespace(resource_id, new_field["name"])
+                new_field["protected_metadata"] = True
 
             new_name = new_field["name"]
 
@@ -273,3 +283,22 @@ def _update_fields(
 
     with open(backend_fields_file, "w") as fp:
         yaml.dump(current_fields, fp)
+
+
+def _add_config(main_dir, resource_id, resource_config, protected_metadata):
+    if protected_metadata:
+        new_fields = []
+        for field in resource_config["fields"]:
+            field["name"] = _use_namespace(resource_id, field["name"])
+            new_fields.append(field)
+        resource_config["fields"] = new_fields
+
+        # update entry_word
+        resource_config["entry_word"]["field"] = _use_namespace(resource_id, resource_config["entry_word"]["field"])
+    # finally copy the resource config to the resource dir
+    with open(main_dir / "resources" / f"{resource_id}.yaml", "w") as fp:
+        yaml.dump(resource_config, fp)
+
+
+def _use_namespace(namespace, orig_name):
+    return "_" + namespace + "_" + orig_name
