@@ -84,7 +84,12 @@ def reconfigure(main_dir: Path, repo, ignore_labels=False):
 
 
 def process_resource(
-    main_dir: Path, resource_dir: Path, repo: GitRepo, done_file: Path | None = None, background=False, ignore_labels=False
+    main_dir: Path,
+    resource_dir: Path,
+    repo: GitRepo,
+    done_file: Path | None = None,
+    background=False,
+    ignore_labels=False,
 ):
     # this backend instance's field configuration
     backend_fields_config = main_dir / "fields.yaml"
@@ -96,10 +101,12 @@ def process_resource(
     global_config = resource_dir / "global.yaml"
     try:
         # this updates config.yaml with new information from the resource
-        resource_id = _update_config(main_dir / "config.yaml", karps_resource_config, global_config)
+        resource_id, protected_metadata = _update_config(main_dir / "config.yaml", karps_resource_config, global_config)
         # this merges all the current resource field configs into one big file, taking into account
         # that fields.yaml may already contain translated labels etc
-        _update_fields(resource_id, backend_fields_config, resource_fields_config, ignore_labels=ignore_labels)
+        _update_fields(
+            resource_id, backend_fields_config, resource_fields_config, protected_metadata, ignore_labels=ignore_labels
+        )
         # finally copy the resource config to the resource dir
         shutil.copy(karps_resource_config, main_dir / "resources" / f"{resource_id}.yaml")
     except Exception as e:
@@ -187,7 +194,12 @@ def _read(filename: Path) -> dict[str, object]:
         return config or {}
 
 
-def _update_config(config_filename: Path, resource_filename: Path, global_filename: Path) -> str:
+def _update_config(config_filename: Path, resource_filename: Path, global_filename: Path) -> tuple[str, bool]:
+    """
+    Reads the input yaml fieles (Karp-s main config, incoming resource config and global config from pipeline).
+
+    Adds tag to Karp-s main config and fetches resource ID and protected metadata status from resource
+    """
     # read the input yaml files
     config_obj = _read(config_filename)
     resource_obj = _read(resource_filename)
@@ -195,15 +207,23 @@ def _update_config(config_filename: Path, resource_filename: Path, global_filena
     # open config.yaml for writing
     with open(config_filename, "w") as fp_out:
         _add_tags(config_obj, resource_obj, karps_config, fp_out)
-    return cast(str, resource_obj["resource_id"])
+    return cast(str, resource_obj["resource_id"]), cast(bool, resource_obj.get("protected_metadata", False))
 
 
-def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file: Path, ignore_labels=False):
+def _update_fields(
+    resource_id: str, backend_fields_file: Path, new_fields_file: Path, protected_metadata: bool, ignore_labels=False
+):
     """
-    when running, fields.yaml are created with information about the
+    When running, fields.yaml are created with information about the
     fields that are not already present in the backend. Take this file
     and merge it with <export.karps.output_config_dir>/fields.yaml
-    There should be no conflicts.
+
+    If the resource has `protected_metadata` set, each field name will be prefixed by resource_id. Right
+    now `protected_metadata` means a user uploaded resource and we do not want their fields to pollute our
+    namespace.
+
+    There should be no conflicts, but ignore_labels allow conflicting labels (and might cause some fields label
+    to be overwritten).
     """
 
     # first check the current backend config for fields
@@ -218,22 +238,29 @@ def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file:
         fields = yaml.load_array(fp)
         for new_field in fields:
             new_label = new_field.get("label")
-            if new_field["name"] in field_lookup:
+
+            if protected_metadata:
+                # if metadata is protected, use resource ID as a kind of namespace
+                new_field["name"] = resource_id + "_" + new_field["name"]
+
+            new_name = new_field["name"]
+
+            if new_name in field_lookup:
                 # update resource list
-                field_resources = field_lookup[new_field["name"]]["resource_id"]
+                field_resources = field_lookup[new_name]["resource_id"]
                 if isinstance(field_resources, list):  # this is for typechecking
                     field_resources.append(resource_id)
                     field_resources = list(set(field_resources))
-                    field_lookup[new_field["name"]]["resource_id"] = field_resources
+                    field_lookup[new_name]["resource_id"] = field_resources
                 if field_resources == [resource_id]:
                     # if the field is used only by current resource, allow overwrites
-                    field_lookup[new_field["name"]].update(new_field)
+                    field_lookup[new_name].update(new_field)
                 else:
                     # no changes to other resources are allowed
                     if (
-                        new_field["type"] != field_lookup[new_field["name"]]["type"]
-                        or new_field.get("collection", False) != field_lookup[new_field["name"]].get("collection", False)
-                        or (not ignore_labels and (new_label and new_label != field_lookup[new_field["name"]].get("label")))
+                        new_field["type"] != field_lookup[new_name]["type"]
+                        or new_field.get("collection", False) != field_lookup[new_name].get("collection", False)
+                        or (not ignore_labels and (new_label and new_label != field_lookup[new_name].get("label")))
                     ):
                         raise ValueError(
                             f"There already exists a field called {new_field['name']} with different settings"
