@@ -100,16 +100,17 @@ class SQLQuery:
             if where:
                 # join[3] == count/idx used disambiguate between mulitple clauses on the same collection field
                 idx = join[3]
-                where_cte = f"{join[0]}{f'_{idx}'}__where AS (" + q_str + ")"
+                where_cte = f"`{join[0]}{f'_{idx}'}__where` AS (" + q_str + ")"
                 ctes.append(where_cte)
                 params.extend(inner_params)
 
         if not count:
             for join_field, join in self.data_joins.items():
+                join_name = f"`{join[0]}`" if join[0] else f"`{join_field}`"
                 if len(join[1]) > 1:
                     concat_ws = f"CONCAT_WS('{FIELD_SEPARATOR}', {','.join([f'`{inner_field_name}`' for inner_field_name in join[1]])})"
                 else:
-                    concat_ws = join[0] or join_field
+                    concat_ws = join_name
                 # TODO add table name to name of cte?
                 q_str, inner_params = (
                     select(
@@ -117,7 +118,7 @@ class SQLQuery:
                             ("__parent_id", None),
                             (
                                 f"GROUP_CONCAT({concat_ws} ORDER BY __parent_id SEPARATOR '{ELEMENT_SEPARATOR}')",
-                                join[0] or join_field,
+                                join_name,
                             ),
                         ]
                     )
@@ -125,7 +126,7 @@ class SQLQuery:
                     .group_by(["__parent_id"])
                     .to_string()[0]
                 )
-                data_cte = f"{join_field}__data AS (" + q_str + ")"
+                data_cte = f"`{join_field}__data` AS (" + q_str + ")"
                 ctes.append(data_cte)
                 params.extend(inner_params)
         return ctes, params
