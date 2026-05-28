@@ -99,7 +99,10 @@ class ConfigField(BaseModel):
             data.pop("categories", None)
         if data.get("category_labels") is None:
             data.pop("category_labels", None)
+
+        # only include if true
         data.pop("protected_metadata", None)
+
         return data
 
 
@@ -183,6 +186,22 @@ def open_local(config: Env, path: str):
     finally:
         if fp:
             fp.close()
+
+
+def get_allowed_fields(config: MainConfig, allowed: Sequence[str] = ()):
+    fields = {}
+    for key, val in config.fields.items():
+        add = True
+        if val.protected_metadata:
+            for resource_id in val.resource_id:
+                if resource_id in allowed:
+                    break
+            else:
+                add = False
+        if add:
+            new_val = ConfigField(**val.model_dump(exclude={"resource_id"}))
+            fields[key] = new_val
+    return fields
 
 
 def get_resource_configs(
