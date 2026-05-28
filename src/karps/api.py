@@ -55,7 +55,6 @@ When sorting by multiple fields, the sort will be applied in the given order. `a
 
 app = FastAPI(
     title="Karp-s API",
-    summary="Exposes Språkbanken's lexical resources.",
     description=api_description,
     version="1.0-dev",
     docs_url=None,
