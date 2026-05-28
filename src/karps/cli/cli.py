@@ -36,7 +36,7 @@ def main():
     if sys.argv[1] == "add":
         resource_id = sys.argv[2]
         resource_dir = main_dir / "incoming" / resource_id
-        process_resource(main_dir, resource_dir, repo)
+        return process_resource(main_dir, resource_dir, repo)
     elif sys.argv[1] == "reload":
         restart_workers(config)
     elif sys.argv[1] == "reconfigure":
@@ -44,8 +44,9 @@ def main():
         if len(sys.argv) > 2 and sys.argv[2] == "--ignore-labels":
             ignore_labels = True
         # if ignore_labels - ignore if incoming resources conflict on the label of fields
-        reconfigure(main_dir, repo, ignore_labels=ignore_labels)
+        error = reconfigure(main_dir, repo, ignore_labels=ignore_labels)
         restart_workers(config)
+        return error
     elif sys.argv[1] == "remove":
         resource_id = sys.argv[2]
         resource_dir = main_dir / "incoming" / resource_id
@@ -74,23 +75,31 @@ def restart_workers(config: Env):
         logger.info("karp-s-backend reloaded")
 
 
-def reconfigure(main_dir: Path, repo, ignore_labels=False):
+def reconfigure(main_dir: Path, repo, ignore_labels=False) -> bool:
     for path in glob.glob(str(main_dir / "resources/*")):
         Path(path).unlink()
+
+    error = False
     for path in glob.glob(str(main_dir / "incoming/*")):
         resource_dir = Path(path)
         if resource_dir.is_dir():
-            process_resource(main_dir, resource_dir, repo, ignore_labels=ignore_labels)
+            resource_error = process_resource(main_dir, resource_dir, repo, ignore_labels=ignore_labels)
+            if resource_error:
+                error = True
+    return error
+
+
+class FieldMismatchError(RuntimeError):
+    def __init__(self, field_name):
+        super().__init__(f"There already exists a field called {field_name} with different settings")
 
 
 def process_resource(
     main_dir: Path,
     resource_dir: Path,
     repo: GitRepo,
-    done_file: Path | None = None,
-    background=False,
     ignore_labels=False,
-):
+) -> bool:
     # this backend instance's field configuration
     backend_fields_config = main_dir / "fields.yaml"
     # general resource information
@@ -99,6 +108,8 @@ def process_resource(
     resource_fields_config = resource_dir / "fields.yaml"
     # other information about resource, for example tags
     global_config = resource_dir / "global.yaml"
+    resource_id = ""
+    error = False
     try:
         # this updates config.yaml with new information from the resource
         resource_id, protected_metadata, karps_resource_config = _update_config(
@@ -111,22 +122,16 @@ def process_resource(
         )
         # def _add_config(main_dir, resource_id, config, protected_metadata):
         _add_config(main_dir, resource_id, karps_resource_config, protected_metadata)
+    except FieldMismatchError:
+        logger.error(f"Failed to install: {resource_id if resource_id else 'unkown resource'}")
+        error = True
     except Exception as e:
-        if background:
-            if done_file:
-                with open(done_file, "w") as fp:
-                    fp.write("ERROR: \n")
-                    for arg in e.args:
-                        fp.write(str(arg) + "\n")
-        else:
-            raise e
+        raise e
     else:
-        if done_file:
-            with open(done_file, "w") as fp:
-                fp.write("success")
-        else:
-            logger.info(f"success, added {resource_id}")
+        logger.info(f"success, added {resource_id}")
         repo.commit_all(msg=f"add {resource_id}")
+
+    return error
 
 
 def create(config: Env):
@@ -272,9 +277,7 @@ def _update_fields(
                         or new_field.get("collection", False) != field_lookup[new_name].get("collection", False)
                         or (not ignore_labels and (new_label and new_label != field_lookup[new_name].get("label")))
                     ):
-                        raise ValueError(
-                            f"There already exists a field called {new_field['name']} with different settings"
-                        )
+                        raise FieldMismatchError(new_field["name"])
             else:
                 new_field["resource_id"] = [resource_id]
                 new_fields.append(new_field)
