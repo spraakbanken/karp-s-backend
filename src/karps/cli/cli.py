@@ -112,16 +112,13 @@ def process_resource(
     error = False
     try:
         # this updates config.yaml with new information from the resource
-        resource_id, protected_metadata, karps_resource_config = _update_config(
+        resource_id, karps_resource_config = _update_config(
             main_dir / "config.yaml", karps_resource_config_path, global_config
         )
         # this merges all the current resource field configs into one big file, taking into account
         # that fields.yaml may already contain translated labels etc
-        _update_fields(
-            resource_id, backend_fields_config, resource_fields_config, protected_metadata, ignore_labels=ignore_labels
-        )
-        # def _add_config(main_dir, resource_id, config, protected_metadata):
-        _add_config(main_dir, resource_id, karps_resource_config, protected_metadata)
+        _update_fields(resource_id, backend_fields_config, resource_fields_config, ignore_labels=ignore_labels)
+        _add_config(main_dir, resource_id, karps_resource_config)
     except FieldMismatchError:
         logger.error(f"Failed to install: {resource_id if resource_id else 'unkown resource'}")
         error = True
@@ -203,11 +200,13 @@ def _read(filename: Path) -> dict[str, object]:
 
 def _update_config(
     config_filename: Path, resource_filename: Path, global_filename: Path
-) -> tuple[str, bool, dict[str, object]]:
+) -> tuple[str, dict[str, object]]:
     """
     Reads the input yaml fieles (Karp-s main config, incoming resource config and global config from pipeline).
 
-    Adds tag to Karp-s main config and fetches resource ID and protected metadata status from resource
+    Adds tag to Karp-s main config
+
+    returns resource ID found in config file
     """
     # read the input yaml files
     config_obj = _read(config_filename)
@@ -219,22 +218,16 @@ def _update_config(
 
     return (
         cast(str, resource_obj["resource_id"]),
-        cast(bool, resource_obj.get("protected_metadata", False)),
         resource_obj,
     )
 
 
-def _update_fields(
-    resource_id: str, backend_fields_file: Path, new_fields_file: Path, protected_metadata: bool, ignore_labels=False
-):
+def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file: Path, ignore_labels=False):
     """
     When running, fields.yaml are created with information about the
     fields that are not already present in the backend. Take this file
     and merge it with <export.karps.output_config_dir>/fields.yaml
 
-    If the resource has `protected_metadata` set, each field name will be prefixed by resource_id. Right
-    now `protected_metadata` means a user uploaded resource and we do not want their fields to pollute our
-    namespace.
 
     There should be no conflicts, but ignore_labels allow conflicting labels (and might cause some fields label
     to be overwritten).
@@ -252,11 +245,6 @@ def _update_fields(
         fields = yaml.load_array(fp)
         for new_field in fields:
             new_label = new_field.get("label")
-
-            if protected_metadata:
-                # if metadata is protected, use resource ID as a kind of namespace
-                new_field["name"] = _use_namespace(resource_id, new_field["name"])
-                new_field["protected_metadata"] = True
 
             new_name = new_field["name"]
 
@@ -288,20 +276,9 @@ def _update_fields(
         yaml.dump(current_fields, fp)
 
 
-def _add_config(main_dir, resource_id, resource_config, protected_metadata):
-    if protected_metadata:
-        new_fields = []
-        for field in resource_config["fields"]:
-            field["name"] = _use_namespace(resource_id, field["name"])
-            new_fields.append(field)
-        resource_config["fields"] = new_fields
-
-        # update entry_word
-        resource_config["entry_word"]["field"] = _use_namespace(resource_id, resource_config["entry_word"]["field"])
-    # finally copy the resource config to the resource dir
+def _add_config(main_dir, resource_id, resource_config):
+    """
+    copy the resource config to the resource dir
+    """
     with open(main_dir / "resources" / f"{resource_id}.yaml", "w") as fp:
         yaml.dump(resource_config, fp)
-
-
-def _use_namespace(namespace, orig_name):
-    return "_" + namespace + "_" + orig_name
