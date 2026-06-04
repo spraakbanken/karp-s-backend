@@ -199,7 +199,7 @@ def get_q_param():
     return Query(
         None,
         title="Query",
-        description='The query. See http://ws.spraakbanken.gu.se/ws/karp/v7 for a description of the query language, however, Karp-s does not support nesting boolean queries, the "not"-boolean query, sub-queries, exists, missing and freetext.',
+        description="The query. See https://ws.spraakbanken.gu.se/docs/karp for a description of the query language, however, Karp-s does not support sub-queries, exists, missing and freetext.",
     )
 
 
