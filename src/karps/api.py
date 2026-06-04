@@ -21,9 +21,13 @@ from karps.errors import errors
 from karps.auth.deps import get_allowed_resources
 
 api_description = """
+**Note**: The API URL is https://spraakbanken4.it.gu.se/karps/v1/
+
+## Karps sökgränssnitt / Karp's search mode
+
 Språkbanken has many lexical resources, listed on our [webpage](https://spraakbanken.gu.se/resurser/lexicon).
 
-This API makes it possible to search the resources, read the entries, and also to get statistical information. For example:
+Karp's search mode makes it possible to search the resources, read the entries, and also to get statistical information. For example:
 - What are the different senses of word \\<X\\> in \\<lexicon\\>?
 - How many (and which) of the resources have an entry with baseform "bord"?
 - What is the frequency distribution of part-of-speech tags in \\<lexicon\\>?
@@ -54,9 +58,9 @@ When sorting by multiple fields, the sort will be applied in the given order. `a
 
 
 app = FastAPI(
-    title="Karp-s API",
+    title="Karps sökgränssnitt - API",
     description=api_description,
-    version="1.0-dev",
+    version="v1",
     docs_url=None,
     redoc_url="/",
 )
