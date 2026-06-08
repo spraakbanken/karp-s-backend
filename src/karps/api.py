@@ -21,8 +21,6 @@ from karps.errors import errors
 from karps.auth.deps import get_allowed_resources
 
 api_description = """
-**Note**: The API URL is https://spraakbanken4.it.gu.se/karps/v1/
-
 ## Karps sökgränssnitt / Karp's search mode
 
 Språkbanken has many lexical resources, listed on our [webpage](https://spraakbanken.gu.se/resurser/lexicon).
