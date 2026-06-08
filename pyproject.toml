@@ -1,6 +1,6 @@
 [project]
 name = "karp-s-backend"
-version = "1.0.0-dev"
+version = "0.0.0"
 description = "Structed data infrastructure"
 readme = "README.md"
 requires-python = ">=3.12.3"
