@@ -27,16 +27,20 @@ def main():
     - reload: reloads the workers of the API
     - reconfigure: recreates the configuration based on each resource in the incoming directory
     """
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    _setup_logging()
     config: Env = get_env()
     # create directory structure if not done
     main_dir, repo = create(config)
     if sys.argv[1] == "init":
         return
     if sys.argv[1] == "add":
+        overwrite_fields = False
+        if len(sys.argv) > 3 and sys.argv[3] == "--overwrite-fields":
+            overwrite_fields = True
+
         resource_id = sys.argv[2]
         resource_dir = main_dir / "incoming" / resource_id
-        return process_resource(main_dir, resource_dir, repo)
+        return process_resource(main_dir, resource_dir, repo, overwrite_fields=overwrite_fields)
     elif sys.argv[1] == "reload":
         restart_workers(config)
     elif sys.argv[1] == "reconfigure":
@@ -55,6 +59,19 @@ def main():
         restart_workers(config)
     else:
         raise RuntimeError(f"karp-s-cli: commands not supported {sys.argv}")
+
+
+def _setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.StreamHandler(sys.stderr),
+        ],
+    )
+
+    logging.getLogger().handlers[0].addFilter(lambda r: r.levelno < logging.WARNING)
+    logging.getLogger().handlers[1].setLevel(logging.WARNING)
 
 
 def restart_workers(config: Env):
@@ -99,6 +116,7 @@ def process_resource(
     resource_dir: Path,
     repo: GitRepo,
     ignore_labels=False,
+    overwrite_fields=False,
 ) -> bool:
     # this backend instance's field configuration
     backend_fields_config = main_dir / "fields.yaml"
@@ -117,10 +135,16 @@ def process_resource(
         )
         # this merges all the current resource field configs into one big file, taking into account
         # that fields.yaml may already contain translated labels etc
-        _update_fields(resource_id, backend_fields_config, resource_fields_config, ignore_labels=ignore_labels)
+        _update_fields(
+            resource_id,
+            backend_fields_config,
+            resource_fields_config,
+            ignore_labels=ignore_labels,
+            overwrite_fields=overwrite_fields,
+        )
         _add_config(main_dir, resource_id, karps_resource_config)
-    except FieldMismatchError:
-        logger.error(f"Failed to install: {resource_id if resource_id else 'unkown resource'}")
+    except FieldMismatchError as e:
+        logger.error(f"Failed to install: {resource_id if resource_id else 'unkown resource'} - {e.args[0]}")
         error = True
     except Exception as e:
         raise e
@@ -222,7 +246,9 @@ def _update_config(
     )
 
 
-def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file: Path, ignore_labels=False):
+def _update_fields(
+    resource_id: str, backend_fields_file: Path, new_fields_file: Path, ignore_labels=False, overwrite_fields=False
+):
     """
     When running, fields.yaml are created with information about the
     fields that are not already present in the backend. Take this file
@@ -247,6 +273,12 @@ def _update_fields(resource_id: str, backend_fields_file: Path, new_fields_file:
             new_label = new_field.get("label")
 
             new_name = new_field["name"]
+
+            if overwrite_fields:
+                # if overwrite_fiels, update the old field with values from the new.
+                old_field = field_lookup.get(new_name, None)
+                if old_field:
+                    old_field.update(new_field)
 
             if new_name in field_lookup:
                 # update resource list
