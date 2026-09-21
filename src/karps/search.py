@@ -131,7 +131,7 @@ def count(
     compile: Sequence[str] = (),
     columns: Iterable[tuple[str, str]] = (),
     sort: Sequence[tuple[str, str]] = (),
-) -> tuple[list[Header], list[list[object]], list[object]]:
+) -> tuple[list[Header], list[list[object]], Sequence[object]]:
     compile = sorted(compile, key=alphanumeric_key)
     # sort columns by the "exploding" column
     columns = sorted(columns, key=lambda column: alphanumeric_key(column[0]))
@@ -147,13 +147,22 @@ def count(
         model_headers = _count_subquery(main_config, env, resources, query, compile, column, sort, rows)
         # add the column headers for extra columns
         final_headers.extend(model_headers)
-    total_row = []
-    _count_subquery(main_config, env, resources, query, [], ("resource_id", "_count"), None, total_row)
 
-    # create the final total row, with "-" for each compile column
-    total = ["-" for _ in compile] + total_row[0]
+    total = None
+    column_totals = []
+    cache = {}
+    for column_field, _ in columns:
+        # for each column field calculate the total
+        if column_field not in cache:
+            total_row = []
+            _count_subquery(main_config, env, resources, query, [], (column_field, "_count"), None, total_row)
+            # set total
+            total = total_row[0][0]
+            # when there are multiple "columns" values, discard the total for the search
+            cache[column_field] = total_row[0][1:]
+        column_totals += cache[column_field]
 
-    return final_headers, rows, total
+    return final_headers, rows, ["-" for _ in compile] + [total] + column_totals
 
 
 def _count_subquery(main_config, env, resources, query, compile, column, sort, rows):
