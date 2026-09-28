@@ -67,6 +67,9 @@ class ConfigField(BaseModel):
         ..., description="(Machine) name of the field. This name is used by resources to list the available fields."
     )
     type: str = PydanticField(..., description="Type of the field, can be text, integer or float or table.")
+    kind: str | None = PydanticField(
+        default=None, description="Kind/class of data. Can be anything (but there might not be frontend support)."
+    )
     collection: bool = PydanticField(default=False, description="If `true`, the field is a list of `type`.")
     label: MultiLang | None = PydanticField(
         default=None, description="Label for the field, can be in mulitple languages."
