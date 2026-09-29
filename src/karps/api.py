@@ -222,7 +222,7 @@ def get_resource_configs_param():
     return inner
 
 
-@app.get("/config", summary="Get config", response_model_exclude_unset=True)
+@app.get("/config", summary="Get config", response_model_exclude_unset=True, response_model_exclude_defaults=True)
 def get_config(allowed_resources: list[str] = Depends(get_allowed_resources)) -> ConfigResponse:
     """
     Returns a description of the contents of each installed resource/lexicon. For example the available fields and their types.
