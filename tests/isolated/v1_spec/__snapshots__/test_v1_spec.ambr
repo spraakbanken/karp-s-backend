@@ -1,0 +1,864 @@
+# serializer version: 1
+# name: test_v1_spec
+  dict({
+    'components': dict({
+      'schemas': dict({
+        'ConfigFieldV1': dict({
+          'additionalProperties': False,
+          'properties': dict({
+            'categories': dict({
+              'anyOf': list([
+                dict({
+                  'items': dict({
+                    'type': 'string',
+                  }),
+                  'type': 'array',
+                }),
+                dict({
+                  'type': 'null',
+                }),
+              ]),
+              'description': 'If set, a list of possible values for this field.',
+              'title': 'Categories',
+            }),
+            'categoryLabels': dict({
+              'anyOf': list([
+                dict({
+                  'additionalProperties': dict({
+                    '$ref': '#/components/schemas/MultiLang',
+                  }),
+                  'type': 'object',
+                }),
+                dict({
+                  'type': 'null',
+                }),
+              ]),
+              'description': 'For fields with categories, labels for each value (optional, even if categories is given).',
+              'title': 'Categorylabels',
+            }),
+            'collection': dict({
+              'default': False,
+              'description': 'If `true`, the field is a list of `type`.',
+              'title': 'Collection',
+              'type': 'boolean',
+            }),
+            'fields': dict({
+              'additionalProperties': dict({
+                '$ref': '#/components/schemas/ConfigFieldV1',
+              }),
+              'description': 'If type is table, then there can be sub-fields (that cannot be table).',
+              'title': 'Fields',
+              'type': 'object',
+            }),
+            'label': dict({
+              'anyOf': list([
+                dict({
+                  '$ref': '#/components/schemas/MultiLang',
+                }),
+                dict({
+                  'type': 'null',
+                }),
+              ]),
+              'description': 'Label for the field, can be in mulitple languages.',
+            }),
+            'name': dict({
+              'description': '(Machine) name of the field. This name is used by resources to list the available fields.',
+              'title': 'Name',
+              'type': 'string',
+            }),
+            'protectedMetadata': dict({
+              'default': False,
+              'description': 'The field is only available for users with access',
+              'title': 'Protectedmetadata',
+              'type': 'boolean',
+            }),
+            'type': dict({
+              'description': 'Type of the field, can be text, integer or float or table.',
+              'title': 'Type',
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+            'name',
+            'type',
+          ]),
+          'title': 'ConfigField',
+          'type': 'object',
+        }),
+        'ConfigResponseV1': dict({
+          'properties': dict({
+            'fields': dict({
+              'additionalProperties': dict({
+                '$ref': '#/components/schemas/ConfigFieldV1',
+              }),
+              'description': 'All fields available in this instance.',
+              'title': 'Fields',
+              'type': 'object',
+            }),
+            'resources': dict({
+              'description': 'All resources available in this instance.',
+              'items': dict({
+                '$ref': '#/components/schemas/ResourceConfig',
+              }),
+              'title': 'Resources',
+              'type': 'array',
+            }),
+            'tags': dict({
+              'additionalProperties': dict({
+                '$ref': '#/components/schemas/Tag',
+              }),
+              'description': 'All tags available in this instance. Will be used by some of the resources under "resources".',
+              'title': 'Tags',
+              'type': 'object',
+            }),
+          }),
+          'required': list([
+            'resources',
+            'tags',
+            'fields',
+          ]),
+          'title': 'ConfigField',
+          'type': 'object',
+        }),
+        'EntryWord': dict({
+          'properties': dict({
+            'description': dict({
+              '$ref': '#/components/schemas/MultiLang',
+            }),
+            'field': dict({
+              'title': 'Field',
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+            'field',
+            'description',
+          ]),
+          'title': 'EntryWord',
+          'type': 'object',
+        }),
+        'HTTPValidationError': dict({
+          'properties': dict({
+            'detail': dict({
+              'items': dict({
+                '$ref': '#/components/schemas/ValidationError',
+              }),
+              'title': 'Detail',
+              'type': 'array',
+            }),
+          }),
+          'title': 'HTTPValidationError',
+          'type': 'object',
+        }),
+        'HitResponse': dict({
+          'properties': dict({
+            'entry': dict({
+              'additionalProperties': True,
+              'title': 'Entry',
+              'type': 'object',
+            }),
+            'resourceId': dict({
+              'title': 'Resourceid',
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+            'entry',
+            'resourceId',
+          ]),
+          'title': 'HitResponse',
+          'type': 'object',
+        }),
+        'MultiLang': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'additionalProperties': dict({
+                'type': 'string',
+              }),
+              'type': 'object',
+            }),
+          ]),
+          'title': 'MultiLang',
+        }),
+        'ResourceConfig': dict({
+          'additionalProperties': False,
+          'properties': dict({
+            'description': dict({
+              'anyOf': list([
+                dict({
+                  '$ref': '#/components/schemas/MultiLang',
+                }),
+                dict({
+                  'type': 'null',
+                }),
+              ]),
+              'description': 'Description of this resource, can be in mulitple languages.',
+            }),
+            'entryWord': dict({
+              '$ref': '#/components/schemas/EntryWord',
+              'description': 'The default field for this resource.',
+            }),
+            'fields': dict({
+              'description': 'The fields available in this resource.',
+              'items': dict({
+                '$ref': '#/components/schemas/ResourceField',
+              }),
+              'title': 'Fields',
+              'type': 'array',
+            }),
+            'label': dict({
+              '$ref': '#/components/schemas/MultiLang',
+              'description': 'Name for this resource, can be in mulitple languages.',
+            }),
+            'limitedAccess': dict({
+              'default': False,
+              'description': 'The resource is only available for users with access',
+              'title': 'Limitedaccess',
+              'type': 'boolean',
+            }),
+            'link': dict({
+              'description': 'A link to a relevant page for the resource.',
+              'title': 'Link',
+              'type': 'string',
+            }),
+            'protectedMetadata': dict({
+              'default': False,
+              'description': 'The metadata of the resource is only available for users with access',
+              'title': 'Protectedmetadata',
+              'type': 'boolean',
+            }),
+            'resourceId': dict({
+              'description': 'The resource ID',
+              'title': 'Resourceid',
+              'type': 'string',
+            }),
+            'size': dict({
+              'description': 'The number of entries in this resource.',
+              'title': 'Size',
+              'type': 'integer',
+            }),
+            'tags': dict({
+              'anyOf': list([
+                dict({
+                  'items': dict({
+                    'type': 'string',
+                  }),
+                  'type': 'array',
+                }),
+                dict({
+                  'type': 'null',
+                }),
+              ]),
+              'description': 'The tags for this resource, see top-level `tags`, for tag labels and description.',
+              'title': 'Tags',
+            }),
+            'updated': dict({
+              'description': 'The timestamp for when this resource was last updated (data or configuration). UNIX timestmap in milliseconds.',
+              'title': 'Updated',
+              'type': 'integer',
+            }),
+          }),
+          'required': list([
+            'resourceId',
+            'fields',
+            'label',
+            'entryWord',
+            'updated',
+            'size',
+            'link',
+          ]),
+          'title': 'ResourceConfig',
+          'type': 'object',
+        }),
+        'ResourceField': dict({
+          'properties': dict({
+            'name': dict({
+              'description': 'The name of the field. Corresponds to a key under the top-level `fields`.',
+              'title': 'Name',
+              'type': 'string',
+            }),
+            'primary': dict({
+              'description': 'Fields with `primary: true` are more relevant than fields with `primary: false`.',
+              'title': 'Primary',
+              'type': 'boolean',
+            }),
+          }),
+          'required': list([
+            'name',
+            'primary',
+          ]),
+          'title': 'ResourceField',
+          'type': 'object',
+        }),
+        'SearchResult': dict({
+          'properties': dict({
+            'hits': dict({
+              'items': dict({
+                '$ref': '#/components/schemas/HitResponse',
+              }),
+              'title': 'Hits',
+              'type': 'array',
+            }),
+            'resourceHits': dict({
+              'additionalProperties': dict({
+                'type': 'integer',
+              }),
+              'title': 'Resourcehits',
+              'type': 'object',
+            }),
+            'resourceOrder': dict({
+              'items': dict({
+                'type': 'string',
+              }),
+              'title': 'Resourceorder',
+              'type': 'array',
+            }),
+            'total': dict({
+              'title': 'Total',
+              'type': 'integer',
+            }),
+          }),
+          'required': list([
+            'hits',
+            'resourceHits',
+            'resourceOrder',
+            'total',
+          ]),
+          'title': 'SearchResult',
+          'type': 'object',
+        }),
+        'Tag': dict({
+          'properties': dict({
+            'description': dict({
+              '$ref': '#/components/schemas/MultiLang',
+            }),
+            'label': dict({
+              '$ref': '#/components/schemas/MultiLang',
+            }),
+          }),
+          'required': list([
+            'label',
+            'description',
+          ]),
+          'title': 'Tag',
+          'type': 'object',
+        }),
+        'UserErrorSchema': dict({
+          'properties': dict({
+            'code': dict({
+              'anyOf': list([
+                dict({
+                  'type': 'integer',
+                }),
+                dict({
+                  'type': 'null',
+                }),
+              ]),
+              'description': '''
+                ### Code definitions
+                
+                1: Returned when the database was forced to truncate a value. Query parameter "columns" is the issue.
+                
+                2: Returned when an unauthenticated user or a user without the proper access tries access a restricted resource.
+                
+                3: Returned when a JWT was given, but the JWT was malformed or expired.
+                
+                4: Returned when an API key was given, but it was malformed, expired or it was not possible to verify the key.
+              ''',
+              'title': '',
+            }),
+            'extra': dict({
+              'anyOf': list([
+                dict({
+                  'additionalProperties': True,
+                  'type': 'object',
+                }),
+                dict({
+                  'type': 'null',
+                }),
+              ]),
+              'description': 'Some errors have data output in addition to the human readable message.',
+              'title': '',
+            }),
+            'message': dict({
+              'title': '',
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+            'message',
+          ]),
+          'title': 'UserErrorSchema',
+          'type': 'object',
+        }),
+        'ValidationError': dict({
+          'properties': dict({
+            'loc': dict({
+              'items': dict({
+                'anyOf': list([
+                  dict({
+                    'type': 'string',
+                  }),
+                  dict({
+                    'type': 'integer',
+                  }),
+                ]),
+              }),
+              'title': 'Location',
+              'type': 'array',
+            }),
+            'msg': dict({
+              'title': 'Message',
+              'type': 'string',
+            }),
+            'type': dict({
+              'title': 'Error Type',
+              'type': 'string',
+            }),
+          }),
+          'required': list([
+            'loc',
+            'msg',
+            'type',
+          ]),
+          'title': 'ValidationError',
+          'type': 'object',
+        }),
+      }),
+      'securitySchemes': dict({
+        'APIKeyHeader': dict({
+          'in': 'header',
+          'name': 'X-Api-Key',
+          'type': 'apiKey',
+        }),
+        'HTTPBearer': dict({
+          'scheme': 'bearer',
+          'type': 'http',
+        }),
+      }),
+    }),
+    'info': dict({
+      'description': '''
+        
+        ## Karps sökgränssnitt / Karp's search mode
+        
+        Språkbanken has many lexical resources, listed on our [webpage](https://spraakbanken.gu.se/resurser/lexicon).
+        
+        Karp's search mode makes it possible to search the resources, read the entries, and also to get statistical information. For example:
+        - What are the different senses of word \<X\> in \<lexicon\>?
+        - How many (and which) of the resources have an entry with baseform "bord"?
+        - What is the frequency distribution of part-of-speech tags in \<lexicon\>?
+        
+        ## The basics
+        
+        A **resource** is a collection of **entries** with the same fields (or schema). Every entry
+        has a default field - `entryWord` - which is usually something like a lemma.
+        
+        ## Sorting the results
+        
+        Ascending and descending sort are available. The sorting uses Swedish (POSIX `sv_SE` or MariaDB `utf8mb4_swedish_ci`) collation for text fields. It is also possible to 
+        sort by fields of other types. Sorting is done using the `sort` parameter with the following grammar:
+        ```ebnf
+        sort          ::= order | multi_fields ;
+        order         ::= "asc" | "desc" ;
+        multi_fields  ::= field_sort ( "," field_sort )* ;
+        field_sort    ::= field_name "|" order ;
+        ```
+        `field_name` is not defined in the grammar, see each API-call for more information about available fields.
+        
+        Examples: `sort=desc`, `sort=entryWord,pos|desc,nativePos|desc`
+        
+        The default value is `asc`. Only selecting an order uses the default field(s). See the respective search commands for defaults.
+        
+        When sorting by multiple fields, the sort will be applied in the given order. `asc` is always used when order is emitted.
+  
+      ''',
+      'title': 'Karps sökgränssnitt - API',
+      'version': 'v1',
+    }),
+    'openapi': '3.1.0',
+    'paths': dict({
+      '/config': dict({
+        'get': dict({
+          'description': '''
+            Returns a description of the contents of each installed resource/lexicon. For example the available fields and their types.
+            
+            Some resources have `limitedAccess: true` - they will not be searchable without access.
+            
+            Some resources have `protectedMetadata: true` - they will not be returned by this call without access.
+          ''',
+          'operationId': 'get_config_config_get',
+          'responses': dict({
+            '200': dict({
+              'content': dict({
+                'application/json': dict({
+                  'schema': dict({
+                    '$ref': '#/components/schemas/ConfigResponseV1',
+                  }),
+                }),
+              }),
+              'description': 'Successful Response',
+            }),
+          }),
+          'security': list([
+            dict({
+              'HTTPBearer': list([
+              ]),
+            }),
+            dict({
+              'APIKeyHeader': list([
+              ]),
+            }),
+          ]),
+          'summary': 'Get config',
+        }),
+      }),
+      '/count': dict({
+        'get': dict({
+          'description': '''
+            From each provided resource, get the entries that match the query q. See http://ws.spraakbanken.gu.se/ws/karp/v7 for a description of the query language.
+            
+            Compile the matching entries on the fields in compile.
+            
+            Add additional data requested by using the `columns` parameter.
+            
+            ### Sorting
+            
+            Sorting is supported for fields that are used in `compile`. The default fields are all the fields in `compile`
+            (**ascending** order) (they themselves sorted alphabetically, just like the columns).
+          ''',
+          'operationId': 'do_count_count_get',
+          'parameters': list([
+            dict({
+              'description': 'The query. See https://ws.spraakbanken.gu.se/docs/karp for a description of the query language, however, Karp-s does not support sub-queries, exists, missing and freetext.',
+              'in': 'query',
+              'name': 'q',
+              'required': False,
+              'schema': dict({
+                'anyOf': list([
+                  dict({
+                    'type': 'string',
+                  }),
+                  dict({
+                    'type': 'null',
+                  }),
+                ]),
+                'description': 'The query. See https://ws.spraakbanken.gu.se/docs/karp for a description of the query language, however, Karp-s does not support sub-queries, exists, missing and freetext.',
+                'title': 'Query',
+              }),
+            }),
+            dict({
+              'description': '''
+                
+                A comma-separated list of resource ID:s, for example `saldo`
+  
+              ''',
+              'in': 'query',
+              'name': 'resources',
+              'required': True,
+              'schema': dict({
+                'anyOf': list([
+                  dict({
+                    'minLength': 1,
+                    'pattern': '^[^,]+(,[^,]+)*$',
+                    'type': 'string',
+                  }),
+                  dict({
+                    'type': 'null',
+                  }),
+                ]),
+                'description': '''
+                  
+                  A comma-separated list of resource ID:s, for example `saldo`
+  
+                ''',
+                'title': 'Resources',
+              }),
+            }),
+            dict({
+              'description': '''
+                
+                A list of fields to compile statistics on, for example `baseform`, `pos`, `normalized_form`
+  
+              ''',
+              'in': 'query',
+              'name': 'compile',
+              'required': True,
+              'schema': dict({
+                'anyOf': list([
+                  dict({
+                    'minLength': 1,
+                    'pattern': '^[^,]+(,[^,]+)*$',
+                    'type': 'string',
+                  }),
+                  dict({
+                    'type': 'null',
+                  }),
+                ]),
+                'description': '''
+                  
+                  A list of fields to compile statistics on, for example `baseform`, `pos`, `normalized_form`
+  
+                ''',
+                'title': 'Compile on',
+              }),
+            }),
+            dict({
+              'description': '''
+                
+                Add extra data columns to the result. For example: `field1=val_field1,field2=val_field2`
+                
+                The left-hand side of `=` denotes  a field that will be used to create columns. Good examples
+                are `resourceId` and `ud_pos`. For each unique value in the result, a column will be created 
+                and the field in the right-hand side of `=` 
+                will be used for values in the cells of that column. If there are multiple values for the right-hand side field they
+                will be shown as a list.
+                
+                It is possible to replace the field of the right-hand side with the keyword `_count` - `columns=resourceId=_count`.
+                This is the default value if `columns` is omitted. With this, the number of
+                hits per unique value of the selected field will be shown.
+                
+                The total number of rows and columns from `compile` will always be shown regardless of the value of `columns`.
+  
+              ''',
+              'in': 'query',
+              'name': 'columns',
+              'required': False,
+              'schema': dict({
+                'default': 'resourceId=_count',
+                'description': '''
+                  
+                  Add extra data columns to the result. For example: `field1=val_field1,field2=val_field2`
+                  
+                  The left-hand side of `=` denotes  a field that will be used to create columns. Good examples
+                  are `resourceId` and `ud_pos`. For each unique value in the result, a column will be created 
+                  and the field in the right-hand side of `=` 
+                  will be used for values in the cells of that column. If there are multiple values for the right-hand side field they
+                  will be shown as a list.
+                  
+                  It is possible to replace the field of the right-hand side with the keyword `_count` - `columns=resourceId=_count`.
+                  This is the default value if `columns` is omitted. With this, the number of
+                  hits per unique value of the selected field will be shown.
+                  
+                  The total number of rows and columns from `compile` will always be shown regardless of the value of `columns`.
+  
+                ''',
+                'title': 'Extra columns',
+                'type': 'string',
+              }),
+            }),
+            dict({
+              'description': '''
+                
+                See [Sorting the results](#section/Sorting-the-results) and API call description for more information.
+  
+              ''',
+              'in': 'query',
+              'name': 'sort',
+              'required': False,
+              'schema': dict({
+                'default': 'asc',
+                'description': '''
+                  
+                  See [Sorting the results](#section/Sorting-the-results) and API call description for more information.
+  
+                ''',
+                'title': 'Sort',
+                'type': 'string',
+              }),
+            }),
+          ]),
+          'responses': dict({
+            '200': dict({
+              'content': dict({
+                'application/json': dict({
+                  'schema': dict({
+                  }),
+                }),
+              }),
+              'description': 'Successful Response',
+            }),
+            '422': dict({
+              'content': dict({
+                'application/json': dict({
+                  'schema': dict({
+                    '$ref': '#/components/schemas/HTTPValidationError',
+                  }),
+                }),
+              }),
+              'description': 'Validation Error',
+            }),
+            '500': dict({
+              'content': dict({
+                'application/json': dict({
+                  'schema': dict({
+                    '$ref': '#/components/schemas/UserErrorSchema',
+                  }),
+                }),
+              }),
+              'description': 'Application error',
+            }),
+          }),
+          'security': list([
+            dict({
+              'HTTPBearer': list([
+              ]),
+            }),
+            dict({
+              'APIKeyHeader': list([
+              ]),
+            }),
+          ]),
+          'summary': 'Count',
+        }),
+      }),
+      '/search': dict({
+        'get': dict({
+          'description': '''
+            From each provided resource, return the entries that match the query q.
+            
+            ### Sorting
+            Sorting is supported on fields that are present in all selected resources. The default field is `entryWord` (**ascending** order).
+            
+            The sort is done within each resource, the results from each resource are not mixed.
+          ''',
+          'operationId': 'do_search_search_get',
+          'parameters': list([
+            dict({
+              'description': 'The query. See https://ws.spraakbanken.gu.se/docs/karp for a description of the query language, however, Karp-s does not support sub-queries, exists, missing and freetext.',
+              'in': 'query',
+              'name': 'q',
+              'required': False,
+              'schema': dict({
+                'anyOf': list([
+                  dict({
+                    'type': 'string',
+                  }),
+                  dict({
+                    'type': 'null',
+                  }),
+                ]),
+                'description': 'The query. See https://ws.spraakbanken.gu.se/docs/karp for a description of the query language, however, Karp-s does not support sub-queries, exists, missing and freetext.',
+                'title': 'Query',
+              }),
+            }),
+            dict({
+              'in': 'query',
+              'name': 'size',
+              'required': False,
+              'schema': dict({
+                'default': 10,
+                'title': 'Size',
+                'type': 'integer',
+              }),
+            }),
+            dict({
+              'in': 'query',
+              'name': 'from',
+              'required': False,
+              'schema': dict({
+                'default': 0,
+                'title': 'From',
+                'type': 'integer',
+              }),
+            }),
+            dict({
+              'description': '''
+                
+                A comma-separated list of resource ID:s, for example `saldo`
+  
+              ''',
+              'in': 'query',
+              'name': 'resources',
+              'required': True,
+              'schema': dict({
+                'anyOf': list([
+                  dict({
+                    'minLength': 1,
+                    'pattern': '^[^,]+(,[^,]+)*$',
+                    'type': 'string',
+                  }),
+                  dict({
+                    'type': 'null',
+                  }),
+                ]),
+                'description': '''
+                  
+                  A comma-separated list of resource ID:s, for example `saldo`
+  
+                ''',
+                'title': 'Resources',
+              }),
+            }),
+            dict({
+              'description': '''
+                
+                See [Sorting the results](#section/Sorting-the-results) and API call description for more information.
+  
+              ''',
+              'in': 'query',
+              'name': 'sort',
+              'required': False,
+              'schema': dict({
+                'default': 'asc',
+                'description': '''
+                  
+                  See [Sorting the results](#section/Sorting-the-results) and API call description for more information.
+  
+                ''',
+                'title': 'Sort',
+                'type': 'string',
+              }),
+            }),
+          ]),
+          'responses': dict({
+            '200': dict({
+              'content': dict({
+                'application/json': dict({
+                  'schema': dict({
+                    '$ref': '#/components/schemas/SearchResult',
+                  }),
+                }),
+              }),
+              'description': 'Successful Response',
+            }),
+            '422': dict({
+              'content': dict({
+                'application/json': dict({
+                  'schema': dict({
+                    '$ref': '#/components/schemas/HTTPValidationError',
+                  }),
+                }),
+              }),
+              'description': 'Validation Error',
+            }),
+            '500': dict({
+              'content': dict({
+                'application/json': dict({
+                  'schema': dict({
+                    '$ref': '#/components/schemas/UserErrorSchema',
+                  }),
+                }),
+              }),
+              'description': 'Application error',
+            }),
+          }),
+          'security': list([
+            dict({
+              'HTTPBearer': list([
+              ]),
+            }),
+            dict({
+              'APIKeyHeader': list([
+              ]),
+            }),
+          ]),
+          'summary': 'Search',
+        }),
+      }),
+    }),
+  })
+# ---

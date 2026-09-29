@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import functools
 import os
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Sequence
+from typing import Any, Iterable, Iterator, Self, Sequence
 import environs
 import glob
 
@@ -27,6 +27,7 @@ class Env:
     auth_jwt_pubkey_path: Path | None = None
     sbauth_url: str | None = None
     sbauth_api_key: str | None = None
+    api_version: str = "v2"
 
 
 @functools.cache
@@ -39,6 +40,7 @@ def get_env() -> Env:
         "user": env.str("DB_USER"),
         "password": env.str("DB_PASSWORD"),
         "database": env.str("DB_DATABASE"),
+        "api_version": env.str("API_VERSION", "v2"),
     }
 
     MISSING = object()
@@ -61,21 +63,15 @@ def get_env() -> Env:
 class MultiLang(RootModel[str | dict[str, str]]): ...
 
 
-class ConfigField(BaseModel):
+class ConfigFieldBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = PydanticField(
         ..., description="(Machine) name of the field. This name is used by resources to list the available fields."
     )
     type: str = PydanticField(..., description="Type of the field, can be text, integer or float or table.")
-    kind: str | None = PydanticField(
-        default=None, description="Kind/class of data. Can be anything (but there might not be frontend support)."
-    )
     collection: bool = PydanticField(default=False, description="If `true`, the field is a list of `type`.")
     label: MultiLang | None = PydanticField(
         default=None, description="Label for the field, can be in mulitple languages."
-    )
-    fields: dict[str, "Field"] = PydanticField(
-        default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
     )
     categories: list[str] | None = PydanticField(
         default=None, description="If set, a list of possible values for this field."
@@ -107,6 +103,23 @@ class ConfigField(BaseModel):
         data.pop("protected_metadata", None)
 
         return data
+
+
+class ConfigFieldV1(ConfigFieldBase):
+    model_config = ConfigDict(title="ConfigField")
+
+    fields: dict[str, "ConfigFieldV1"] = PydanticField(
+        default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
+    )
+
+
+class ConfigField(ConfigFieldBase):
+    kind: str | None = PydanticField(
+        default=None, description="Kind/class of data. Can be anything (but there might not be frontend support)."
+    )
+    fields: dict[str, "ConfigField"] = PydanticField(
+        default_factory=dict, description="If type is table, then there can be sub-fields (that cannot be table)."
+    )
 
 
 class Field(ConfigField):
@@ -166,11 +179,37 @@ class Tag(BaseModel):
     description: MultiLang
 
 
-class ConfigResponse(BaseModel):
+class ConfigResponseBase(BaseModel):
     resources: list[ResourceConfig] = PydanticField(..., description="All resources available in this instance.")
     tags: dict[str, Tag] = PydanticField(
         ..., description='All tags available in this instance. Will be used by some of the resources under "resources".'
     )
+
+
+class ConfigResponseV1(ConfigResponseBase):
+    model_config = ConfigDict(title="ConfigField")
+
+    fields: dict[str, ConfigFieldV1] = PydanticField(..., description="All fields available in this instance.")
+
+    @classmethod
+    def from_v2_class(
+        cls, resources: list[ResourceConfig], tags: dict[str, Tag], fields: dict[str, ConfigField]
+    ) -> Self:
+        """
+        Adapt configuration to v1 API
+        """
+        new_fields = {}
+        for key, val in fields.items():
+            dumped = val.model_dump()
+            if "kind" in dumped:
+                del dumped["kind"]
+            new_fields[key] = ConfigFieldV1(**dumped)
+            if "fields" in dumped:
+                raise NotImplementedError("fields are not supported in V1")
+        return cls(resources=resources, tags=tags, fields=new_fields)
+
+
+class ConfigResponse(ConfigResponseBase):
     fields: dict[str, ConfigField] = PydanticField(..., description="All fields available in this instance.")
 
 
@@ -191,7 +230,7 @@ def open_local(config: Env, path: str):
             fp.close()
 
 
-def get_allowed_fields(config: MainConfig, allowed: Sequence[str] = ()):
+def get_allowed_fields(config: MainConfig, allowed: Sequence[str] = ()) -> dict[str, ConfigField]:
     fields = {}
     for key, val in config.fields.items():
         add = True

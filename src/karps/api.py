@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from karps.config import (
+    ConfigResponseV1,
     Env,
     ConfigResponse,
     ResourceConfig,
@@ -54,11 +55,16 @@ The default value is `asc`. Only selecting an order uses the default field(s). S
 When sorting by multiple fields, the sort will be applied in the given order. `asc` is always used when order is emitted.
 """
 
+env: Env = get_env()
+if env.sql_query_logging:
+    setup_sql_logger(env.logging_dir)
+
+api_version = env.api_version
 
 app = FastAPI(
     title="Karps sökgränssnitt - API",
     description=api_description,
-    version="v1",
+    version=api_version,
     docs_url=None,
     redoc_url="/",
 )
@@ -88,11 +94,6 @@ async def exception_handler2(request: Request, exc: errors.CodeUserError):
         status_code=500,
         content=content,
     )
-
-
-env: Env = get_env()
-if env.sql_query_logging:
-    setup_sql_logger(env.logging_dir)
 
 
 compile_param_description = """
@@ -222,8 +223,14 @@ def get_resource_configs_param():
     return inner
 
 
-@app.get("/config", summary="Get config", response_model_exclude_unset=True, response_model_exclude_defaults=True)
-def get_config(allowed_resources: list[str] = Depends(get_allowed_resources)) -> ConfigResponse:
+@app.get(
+    "/config",
+    summary="Get config",
+    response_model_exclude_unset=True,
+    response_model_exclude_defaults=True,
+    response_model=ConfigResponseV1 if api_version == "v1" else ConfigResponse,
+)
+def get_config(allowed_resources: list[str] = Depends(get_allowed_resources)) -> ConfigResponseV1 | ConfigResponse:
     """
     Returns a description of the contents of each installed resource/lexicon. For example the available fields and their types.
 
@@ -234,6 +241,8 @@ def get_config(allowed_resources: list[str] = Depends(get_allowed_resources)) ->
     config = load_config(env)
     resources = list(get_resource_configs(env, allowed=allowed_resources))
     fields = get_allowed_fields(config, allowed=allowed_resources)
+    if api_version == "v1":
+        return ConfigResponseV1.from_v2_class(tags=config.tags, fields=fields, resources=resources)
     return ConfigResponse(tags=config.tags, fields=fields, resources=resources)
 
 

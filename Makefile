@@ -65,11 +65,17 @@ reload:
 
 .PHONY: test
 test:
-	PYTHONPATH=. $(UV) pytest $(ARGS)
+	PYTHONPATH=. $(UV) pytest tests/unisolated $(ARGS)
+	for dir in tests/isolated/*/; do \
+		PYTHONPATH=. $(UV) pytest "$$dir" $(ARGS) || exit $$?; \
+	done
 
 .PHONY: update-snapshots
 update-snapshots:
-	PYTHONPATH=. $(UV) pytest --snapshot-update $(ARGS)
+	PYTHONPATH=. $(UV) pytest tests/unisolated --snapshot-update $(ARGS)
+	for dir in tests/isolated/*/; do \
+		PYTHONPATH=. $(UV) pytest "$$dir" --snapshot-update $(ARGS) || exit $$?; \
+	done
 
 .PHONY: fmt
 fmt:
