@@ -51,29 +51,17 @@ endif
 	uv sync $(ACTIVE) --group prod
 	@touch $@
 
-run:
-	mkdir run
-
 .PHONY: serve serve-w-reload
 
-PORT ?= 9000
-NUM_WORKERS ?= 1
+serve: install-dev
+	bin/serve
 
-GUNICORN_BASE = $(UV) gunicorn karps.api:app --control-socket run/gunicorn.ctl --worker-class asgi --workers $(NUM_WORKERS) --bind 127.0.0.1:$(PORT) --pid run/gunicorn.pid
-
-serve: install-dev run
-	$(GUNICORN_BASE)
-
-serve-w-reload: install-dev run
-	$(GUNICORN_BASE) --reload --graceful-timeout 1
+serve-w-reload: install-dev
+	bin/serve-w-reload
 
 .PHONY: reload
-reload: run/gunicorn.ctl
-	$(UV) gunicornc -s run/gunicorn.ctl -c "reload"
-
-run/gunicorn.ctl:
-	@echo "Cannot find gunicorn control socket, have you run make serve(-w-reload)?"
-	@exit 1
+reload:
+	bin/reload
 
 .PHONY: test
 test:

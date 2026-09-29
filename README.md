@@ -26,6 +26,9 @@ and port:
 
 Running a backend that reloads on code changes are done using `make serve-w-reload`
 
+Make and the scripts in `bin/` runs the backend using `gunicorn`, however any server
+with support for ASGI can be used.
+
 ## Caching
 
 The workers only read the configuration files on startup. To serve new code or 
@@ -45,4 +48,3 @@ This code is type checked using basedpyright, see `pyrightconfig.json` for setti
 basedpyright is installed in the venv and is used instead of Pyright because
 Pyright requires NodeJS. There is also a language server for basedpyright that
 can be used in your editor for completions and highlighting.
-

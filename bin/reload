@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+. $(dirname "$0")/setup
+
+if [ ! -e run/gunicorn.ctl ]; then
+	echo "Cannot find gunicorn control socket, have you run 'bin/gunicorn' or 'make serve(-w-reload)'?"
+	exit 1
+fi
+
+exec uv run gunicornc -s run/gunicorn.ctl -c "reload"
+
