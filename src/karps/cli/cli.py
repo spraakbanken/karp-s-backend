@@ -96,6 +96,8 @@ def reconfigure(main_dir: Path, repo, ignore_labels=False) -> bool:
     for path in glob.glob(str(main_dir / "resources/*")):
         Path(path).unlink()
 
+    (main_dir / "fields.yaml").unlink()
+
     error = False
     for path in glob.glob(str(main_dir / "incoming/*")):
         resource_dir = Path(path)
