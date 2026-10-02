@@ -1,3 +1,4 @@
+import argparse
 import glob
 from io import TextIOWrapper
 import logging
@@ -31,34 +32,92 @@ def main():
     config: Env = get_env()
     # create directory structure if not done
     main_dir, repo = create(config)
-    if sys.argv[1] == "init":
-        return
-    if sys.argv[1] == "add":
-        overwrite_fields = False
-        if len(sys.argv) > 3 and sys.argv[3] == "--overwrite-fields":
-            overwrite_fields = True
 
-        resource_id = sys.argv[2]
-        resource_dir = main_dir / "incoming" / resource_id
-        return process_resource(main_dir, resource_dir, repo, overwrite_fields=overwrite_fields)
-    elif sys.argv[1] == "reload":
+    parser = create_parser()
+    res = parser.parse_args()
+
+    if res.command == "init":
+        # if conf dir did not exist before it does now
+        return
+    if res.command == "add":
+        resource_dir = main_dir / "incoming" / res.resource_id
+        return process_resource(
+            main_dir, resource_dir, repo, overwrite_fields=res.overwrite_fields, ignore_labels=res.ignore_labels
+        )
+    elif res.command == "reload":
         restart_workers(config)
-    elif sys.argv[1] == "reconfigure":
-        ignore_labels = False
-        if len(sys.argv) > 2 and sys.argv[2] == "--ignore-labels":
-            ignore_labels = True
+    elif res.command == "reconfigure":
         # if ignore_labels - ignore if incoming resources conflict on the label of fields
-        error = reconfigure(main_dir, repo, ignore_labels=ignore_labels)
+        error = reconfigure(main_dir, repo, ignore_labels=res.ignore_labels)
         restart_workers(config)
         return error
-    elif sys.argv[1] == "remove":
-        resource_id = sys.argv[2]
-        resource_dir = main_dir / "incoming" / resource_id
+    elif res.command == "remove":
+        resource_dir = main_dir / "incoming" / res.resource_id
         shutil.rmtree(resource_dir, ignore_errors=True)
         reconfigure(main_dir, repo)
         restart_workers(config)
-    else:
-        raise RuntimeError(f"karp-s-cli: commands not supported {sys.argv}")
+    return 1
+
+
+def create_parser():
+    parser = argparse.ArgumentParser(
+        prog="karp-s-cli",
+        description="""
+            New resources are added in the ./incoming directory in the backend repo. When
+            the resource directory have been added, call `karp-s-cli add <resource_id>`
+            to add it to the current configuration. If the resource is not compatible with
+            already added resources, the CLI returns with an error.
+
+            The resource directory should contain three files:
+            - resource.yaml - names, descriptions and settings for the resource. Copied as is to ./resources.
+            - fields.yaml - containing the field settings. The file is merged with main ./fields.yaml
+            - global.yaml - containing non-field related application settings. The file is merged with ./config.yaml.
+            See karp-pipeline for more information about the resource files.
+
+            ./resources, ./fields.yaml and ./config.yaml can safely be removed and recreated from ./incoming
+            using the reconfigure command.
+            """,
+    )
+
+    def add_ignore_labels(subparser):
+        subparser.add_argument(
+            "--ignore-labels",
+            action="store_true",
+            help="Ignore differing labels when merging fields.",
+        )
+
+    def add_resource_id_pos_arg(subparser):
+        subparser.add_argument("resource_id", help="The resource id to add/remove - must exist in 'incoming'.")
+
+    subparsers = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
+    subparsers.add_parser("init")
+    add_parser = subparsers.add_parser(
+        "add",
+        help="Add a resource from 'incoming'",
+        allow_abbrev=False,
+    )
+    add_resource_id_pos_arg(add_parser)
+    add_parser.add_argument(
+        "--overwrite-fields",
+        action="store_true",
+        help="Overwrite existing fields that conflict with new resouce.",
+    )
+    add_ignore_labels(add_parser)
+
+    remove_parser = subparsers.add_parser(
+        "remove", help="Remove a resource from 'incoming' and recreate settings without it."
+    )
+    add_resource_id_pos_arg(remove_parser)
+    reconf_parser = subparsers.add_parser(
+        "reconfigure",
+        help="Recreate settings from contents in 'incoming'.",
+        allow_abbrev=False,
+    )
+    add_ignore_labels(reconf_parser)
+    subparsers.add_parser(
+        "reload", help="Reload the backend, needed to clear caches after doing changes to configuration."
+    )
+    return parser
 
 
 def _setup_logging():
