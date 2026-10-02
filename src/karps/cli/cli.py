@@ -285,6 +285,27 @@ def _read(filename: Path) -> dict[str, object]:
         return config or {}
 
 
+def _normalize_label(field_name: str, label: dict[str, str] | str | None) -> dict[str, str] | str | None:
+    """
+    If label is a dict, but same in all languages - replace with string.
+
+    If label is None, '' or {} - fall back on field name.
+
+    Otherwise return the original label.
+    """
+    if not label:
+        return field_name
+    if isinstance(label, dict):
+        values = list(label.values())
+        if values.count(values[0]) == len(values):
+            # they are all the same
+            return values[0]
+        else:
+            return label
+
+    return label
+
+
 def _update_config(
     config_filename: Path, resource_filename: Path, global_filename: Path
 ) -> tuple[str, dict[str, object]]:
@@ -333,9 +354,9 @@ def _update_fields(
     with open(new_fields_file) as fp:
         fields = yaml.load_array(fp)
         for new_field in fields:
-            new_label = new_field.get("label")
-
             new_name = new_field["name"]
+
+            new_field["label"] = _normalize_label(new_name, new_field.get("label"))
 
             if overwrite_fields:
                 # if overwrite_fields, update the old field with values from the new.
@@ -365,7 +386,7 @@ def _update_fields(
                         # check collection
                         or new_field.get("collection", False) != field_lookup[new_name].get("collection", False)
                         # check labels (overridable with --ignore-labels)
-                        or (not ignore_labels and (new_label and new_label != field_lookup[new_name].get("label")))
+                        or (not ignore_labels and (new_field["label"] != field_lookup[new_name].get("label")))
                         # check kind
                         or (new_field.get("kind") != field_lookup[new_name].get("kind"))
                     ):
