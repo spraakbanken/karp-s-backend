@@ -277,9 +277,13 @@ def _update_fields(
             new_name = new_field["name"]
 
             if overwrite_fields:
-                # if overwrite_fiels, update the old field with values from the new.
+                # if overwrite_fields, update the old field with values from the new.
                 old_field = field_lookup.get(new_name, None)
                 if old_field:
+                    old_keys = list(old_field.keys())
+                    for key in old_keys:
+                        if key not in new_field and key != "resource_id":
+                            del old_field[key]
                     old_field.update(new_field)
 
             if new_name in field_lookup:
@@ -295,9 +299,14 @@ def _update_fields(
                 else:
                     # no changes to other resources are allowed
                     if (
+                        # check type
                         new_field["type"] != field_lookup[new_name]["type"]
+                        # check collection
                         or new_field.get("collection", False) != field_lookup[new_name].get("collection", False)
+                        # check labels (overridable with --ignore-labels)
                         or (not ignore_labels and (new_label and new_label != field_lookup[new_name].get("label")))
+                        # check kind
+                        or (new_field.get("kind") != field_lookup[new_name].get("kind"))
                     ):
                         raise FieldMismatchError(new_field["name"])
             else:
