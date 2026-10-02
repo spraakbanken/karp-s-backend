@@ -49,6 +49,8 @@ def main():
     elif res.command == "reconfigure":
         # if ignore_labels - ignore if incoming resources conflict on the label of fields
         error = reconfigure(main_dir, repo, ignore_labels=res.ignore_labels)
+        if error:
+            logger.error("There was an error for at least one resource, check output.")
         restart_workers(config)
         return error
     elif res.command == "remove":
